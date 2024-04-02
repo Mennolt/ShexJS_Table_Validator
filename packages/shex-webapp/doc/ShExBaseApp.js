@@ -1384,14 +1384,14 @@ class DirectShExValidator {
     await Promise.all(ret.map(entry => this.renderer.entry(entry)));
     this.renderer.finish();
 	//add bit that can save the data here
-	/*let blobx = new Blob([JSON.stringify(ret)], {type: 'text/plain'})
+	let blobx = new Blob([JSON.stringify(ret)], {type: 'text/plain'})
 	var hiddenElement = window.document.createElement('a');
 	
 
     hiddenElement.href = window.URL.createObjectURL(blobx)//'data:attachment/text,' + encodeURI(JSON.stringify(ret));
     hiddenElement.target = '_blank';
     hiddenElement.download = 'myFile.txt';
-    hiddenElement.click();  */
+    hiddenElement.click();  
 	//end of bit that saves the data (hopefully) here
     return {validationResults: ret}; // for tester or whoever is awaiting this promise
   }
