@@ -16,14 +16,29 @@ function createArray() {
 	
 	//sort rows, starting on the last column and going backwards towards the first
 	tableRows.sort(create_compare_by_attr('error_type'))
+	for (var i = 0 ; i < tableRows.length;i++){
+		console.log(tableRows[i].error_type)
+	}
 	tableRows.sort(create_compare_by_attr('value'))
+	for (var i = 0 ; i < tableRows.length;i++){
+		console.log(tableRows[i].value)
+	}
 	tableRows.sort(create_compare_by_attr('property'))
+	for (var i = 0 ; i < tableRows.length;i++){
+		console.log(tableRows[i].property)
+	}
+	tableRows.sort(create_compare_by_attr('shape'))
+	for (var i = 0 ; i < tableRows.length;i++){
+		console.log(tableRows[i].shape)
+	}
 	
 	//calculate the required rowcounts for each 
 	var prop_counts = [0]
 	var value_counts = [0]
+	var shape_counts = [0]
 	last_value = tableRows[0].value
 	last_prop = tableRows[0].property
+	last_shape = tableRows[0].shape
 	for (var i = 0 ; i < tableRows.length ; i++){
 		//Property
 		if (tableRows[i].property == last_prop) {
@@ -39,37 +54,54 @@ function createArray() {
 			value_counts.push(1)
 			last_value = tableRows[i].value
 		}
+		//shape
+		if (tableRows[i].shape == last_shape) {
+			shape_counts[shape_counts.length-1] += 1
+		} else {
+			shape_counts.push(1)
+			last_shape = tableRows[i].shape
+		}
 	}
-	//for item, property, and value, specify the required rowcount. For items not to be shown, use 0
+	//for item, shape, property, and value, specify the required rowcount. For items not to be shown, use 0
 	var value_countdown = 0
 	var prop_countdown = 0
+	var shape_countdown = 0
 	for (var i = 0 ; i < tableRows.length; i++){
 		//add the item to the front of the row, with rowcount
 		var rowcount = tableRows.length * (i == 0);
 		tableRows[i].item = {text : x[0].node, rowcount : rowcount};
 		
-		//add the right rowcount for value and Property
+		//add the right rowcount for value
 		if (value_countdown == 0) {
 			tableRows[i].value = {text : tableRows[i].value, rowcount : value_counts[0]};
-			value_countdown = value_counts.pop()
+			value_countdown = value_counts.shift()-1
 		} else {
 			tableRows[i].value = {text : tableRows[i].value, rowcount : 0}
 			value_countdown -= 1
 		}
+		//property
 		if (prop_countdown == 0) {
 			tableRows[i].property = {text : tableRows[i].property, rowcount : prop_counts[0]}
-			prop_countdown = prop_counts.pop()
+			prop_countdown = prop_counts.shift()-1
 		} else {
 			tableRows[i].property = {text : tableRows[i].property, rowcount : 0}
 			prop_countdown -= 1
+		}
+		//shape
+		if (shape_countdown == 0) {
+			tableRows[i].shape = {text : tableRows[i].shape, rowcount : shape_counts[0]}
+			shape_countdown = shape_counts.shift()-1
+		} else {
+			tableRows[i].shape = {text : tableRows[i].shape, rowcount : 0}
+			shape_countdown -= 1
 		}
 	}
 	
 	//TODO: Get names of all items likely to be in table using SPARQL Query (get query from my python thing)
 	//TODO: Use SPARQL Query to convert links into nicer values with embedded links
-	//TODO: Create MakeCell function that adds a single cell to the specified row of a table using addElement
-	//TODO: Create MakeRow function that creates a row in the tablebody using addElement, with rowID depending on the item this validation was originally For
-	//TODO: Make a function that takes (converted and niceified) tableRows and creates the entire table
+
+	
+	displayTable(tableRows)
 	
 	addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
 	addElement('output_container', 'div', 'test', JSON.stringify(tableRows)) ;
@@ -169,6 +201,60 @@ function create_compare_by_attr(attr){
 	}
 }
 
+function displayTable(dataArray){
+	//Takes an array of JSON objects, where each object represents a row. 
+	//Displays this as a table with columns item, shape, property, value,  issue type, triple link, full error message
+	//All row HTML elements have an id of [item_ID]_[row_nr]
+	var item_link_split = dataArray[0].item.text.split("/")
+	var item_ID = item_link_split[item_link_split.length - 1]
+	var row_nr = 0
+	
+	//TODO: Display headers
+	headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+	for (var i = 0 ; i < headers.length; i++) {
+		addElement('header_row', 'th', "", headers[i])
+	}
+	
+	for (var i = 0 ; i < dataArray.length; i++) {
+		full_ID = item_ID + "_" + row_nr
+		addRow(dataArray[i], full_ID)
+		row_nr+=1
+	}
+}
+
+function addRow(rowJSON, row_ID) {
+	//adds a single row to the table
+	//add row element to child cells to:
+	addElement('table_body', 'tr', row_ID, "")
+	//add all child cells in order
+	addCell(rowJSON.item, row_ID)
+	addCell(rowJSON.shape, row_ID)
+	addCell(rowJSON.property, row_ID)
+	addCell(rowJSON.value, row_ID)
+	addCell(rowJSON.error_type, row_ID)
+	addCell("Triple link here please", row_ID)
+	addCell(rowJSON.error_fulltext, row_ID)
+}
+
+function addCell(cellJSON, row_ID){
+	//add a single cell to the specified row of a table
+	if (cellJSON instanceof Object){ //what to do for complex input
+		//don't create elements for things not to be displayed
+		if (cellJSON.rowcount != 0) {
+			var p = document.getElementById(row_ID);
+			var newElement = document.createElement('td');
+			newElement.setAttribute('class', "highcell");
+			newElement.setAttribute('rowspan', cellJSON.rowcount);
+			newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
+			p.appendChild(newElement);
+		}
+	} else { //what to do for simple cells
+		var p = document.getElementById(row_ID);
+		var newElement = document.createElement('td');
+		newElement.innerHTML = cellJSON
+		p.appendChild(newElement)
+	}
+}
 
 //imported functions:
 function loadFile(filePath) {
