@@ -1,36 +1,118 @@
-function createArray() {
+async function renderOutput() {
+	const x = JSON.parse(loadFile('./Responses/Eval_E3_v3.txt'))
+	
+	//create headers for output table
+	headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+	for (var i = 0 ; i < headers.length; i++) {
+		addElement('header_row', 'th', "", headers[i])
+	}
+
+	
+	for (var i = 0; i < x.length; i++){
+		var arry = createArray(x[i])
+		
+		
+		// get data required for pretty display
+		var endpoint = "https://validatortest.wikibase.cloud/query/sparql"
+		var item_ID_link = x[i].node.split('/')
+		var query = `
+PREFIX wd: <https://validatortest.wikibase.cloud/entity/>
+PREFIX p: <https://validatortest.wikibase.cloud/prop/>
+PREFIX ps: <https://validatortest.wikibase.cloud/prop/statement/>
+PREFIX wdt: <https://validatortest.wikibase.cloud/prop/direct/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX pq: <https://validatortest.wikibase.cloud/prop/qualifier/>
+PREFIX pr:  <https://validatortest.wikibase.cloud/prop/reference/>
+#specific prefixes
+PREFIX wdv: <https://validatortest.wikibase.cloud/entity/value/>
+PREFIX s: <https://validatortest.wikibase.cloud/entity/statement/>
+PREFIX psv: <https://validatortest.wikibase.cloud/prop/statement/value/>
+
+
+SELECT ?item ?p_property ?p_propertyLabel ?statementLink ?simplevalue ?simplevalueLabel 
+WHERE
+{
+  wd:` + item_ID_link[item_ID_link.length - 1] + ` ?property ?statementLink . 
+  ?statementLink ?simplevalueLink ?simplevalue .
+  wd:` + item_ID_link[item_ID_link.length - 1] + ` ?propdirect ?simplevalue.
+  wd:` + item_ID_link[item_ID_link.length - 1] + ` rdfs:label ?item.
+ 
+  #find property label (thanks to tagishsimon)
+  ?p_property wikibase:claim ?property .
+  
+  FILTER(STRSTARTS(STR(?propdirect), STR(wdt:)))
+  FILTER(STRSTARTS(STR(?property), STR(p:))) 
+  #BIND(STR(?simplevalueLink) as ?xxx)
+  FILTER(STRSTARTS(STR(?simplevalueLink),  STR(ps:)))
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
+}` //` + item_ID_link[item_ID_link.length - 1] + `
+ 
+		var response = await fetch(endpoint + "?" + new URLSearchParams({'format' : "json"}), {
+				method : "POST",
+				body: new URLSearchParams({'query' : query}),
+				headers: {
+					'Accept': 'application/sparql-results+json',
+					'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+					},
+					mode:'cors'
+			})
+		console.log(response)
+		console.log(response.json())
+
+		//TODO: Use SPARQL Query to convert links into nicer values with embedded links
+		displayTable(arry)
+		addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
+		addElement('output_container', 'div', 'test', JSON.stringify(arry)) ;
+		addElement('output_container', 'div', 'test', '<br>')
+		addElement('output_container', 'div', 'test', JSON.stringify(x[i]))
+		addElement('output_container', 'div', 'test', '<br>')
+		addElement('output_container', 'div', 'test', '<br>')
+	}
+}
+
+function createArray(x) {
 	//intent: take a Eval results (ret) as JSON
 	//turn it into an array with columns item, shape, property, value,  issue type, triple link, full error message
-	const x = JSON.parse(loadFile('./Responses/Eval_E3_v2.txt'))
+	//const x = JSON.parse(loadFile('./Responses/Eval_E3_v2.txt'))
 	
 
 	
 	if (x.status === 'conformant') {
 		//if here: add 1 row containing item name, then conformant in all other cells
-		return
+		const row_vals = [{item : {text : x.node, rowcount : 1}, shape : x.shape.term, 
+		property : null, value : null,
+		error_type : 'conforms'}]
+		/* 
+		var item_link_split = x.node.split("/")
+		var item_ID = item_link_split[item_link_split.length - 1]
+		
+		addRow(row_vals, item_ID + '_0') */
+		
+		return row_vals
 	}
 	
 	//addElement('output_container', 'div', 'test', JSON.stringify(x[0].appinfo.errors[0].errors.errors[0]))
 	
-	var tableRows = goThroughJSON(x[0].appinfo);
+	var tableRows = goThroughJSON(x.appinfo);
 	
 	//sort rows, starting on the last column and going backwards towards the first
 	tableRows.sort(create_compare_by_attr('error_type'))
-	for (var i = 0 ; i < tableRows.length;i++){
+	/* for (var i = 0 ; i < tableRows.length;i++){
 		console.log(tableRows[i].error_type)
-	}
+	} */
 	tableRows.sort(create_compare_by_attr('value'))
-	for (var i = 0 ; i < tableRows.length;i++){
+	/* for (var i = 0 ; i < tableRows.length;i++){
 		console.log(tableRows[i].value)
-	}
+	} */
 	tableRows.sort(create_compare_by_attr('property'))
-	for (var i = 0 ; i < tableRows.length;i++){
+	/* for (var i = 0 ; i < tableRows.length;i++){
 		console.log(tableRows[i].property)
-	}
+	} */
 	tableRows.sort(create_compare_by_attr('shape'))
-	for (var i = 0 ; i < tableRows.length;i++){
+	/* for (var i = 0 ; i < tableRows.length;i++){
 		console.log(tableRows[i].shape)
-	}
+	} */
 	
 	//calculate the required rowcounts for each 
 	var prop_counts = [0]
@@ -69,7 +151,7 @@ function createArray() {
 	for (var i = 0 ; i < tableRows.length; i++){
 		//add the item to the front of the row, with rowcount
 		var rowcount = tableRows.length * (i == 0);
-		tableRows[i].item = {text : x[0].node, rowcount : rowcount};
+		tableRows[i].item = {text : x.node, rowcount : rowcount};
 		
 		//add the right rowcount for value
 		if (value_countdown == 0) {
@@ -97,16 +179,12 @@ function createArray() {
 		}
 	}
 	
-	//TODO: Get names of all items likely to be in table using SPARQL Query (get query from my python thing)
-	//TODO: Use SPARQL Query to convert links into nicer values with embedded links
+	
 
+	return tableRows
 	
-	displayTable(tableRows)
 	
-	addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
-	addElement('output_container', 'div', 'test', JSON.stringify(tableRows)) ;
-	addElement('output_container', 'div', 'test', '<br>')
-	addElement('output_container', 'div', 'test', JSON.stringify(x))
+	 
 }
 
 function goThroughJSON(data) {
@@ -128,7 +206,7 @@ function goThroughJSON(data) {
 				//this makes it so in the end regardless of the amount of recursion done the system has an array representing the table, 
 				//where each element is a dictionary representing a row
 				
-				console.log(addition)
+				//console.log(addition)
 				if (addition.constructor === objectConstructor) { //comparisaon based on https://stackoverflow.com/questions/11182924/how-to-check-if-javascript-object-is-json
 					//if the addition is already an Array of JSON objects, add it directly
 					output = output.concat(addition)
@@ -168,7 +246,6 @@ function createArrayRow(item) {
 	//output row template: {property, value, error type}
 	
 	var output = {}
-	//console.log(item)
 	if (item.type == "MissingProperty") {
 		output.property =  item.property;
 		output.value = null; 
@@ -178,6 +255,20 @@ function createArrayRow(item) {
 		output.value = item.node.value
 		output.property = null
 		output.error_fulltext = item.errors[0]
+	} else if (item.type == "ExcessTripleViolation") {
+		output.error_type = item.type
+		output.error_fulltext = item
+		output.property = item.triple.predicate.value
+		output.value = item.triple.object.value
+	} else if (item.type == "TypeMismatch") {
+		console.log(item)
+		console.log('type mismatch detected! Implement to continue')
+	} else if (item.type == 'SemActFailure') {
+		console.log(item)
+		console.log('Semaphote Act Failure detected! Implement to continue')
+	} else if (item.type == 'ClosedShapeViolation') {
+		console.log(item)
+		console.log('Closed Shape Violation detected! Implement to continue')
 	}else {
 		output.error_type = item.type
 		output.error_fulltext = item
@@ -209,12 +300,6 @@ function displayTable(dataArray){
 	var item_ID = item_link_split[item_link_split.length - 1]
 	var row_nr = 0
 	
-	//TODO: Display headers
-	headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
-	for (var i = 0 ; i < headers.length; i++) {
-		addElement('header_row', 'th', "", headers[i])
-	}
-	
 	for (var i = 0 ; i < dataArray.length; i++) {
 		full_ID = item_ID + "_" + row_nr
 		addRow(dataArray[i], full_ID)
@@ -236,7 +321,7 @@ function addRow(rowJSON, row_ID) {
 	addCell(rowJSON.error_fulltext, row_ID)
 }
 
-function addCell(cellJSON, row_ID){
+function addCell(cellJSON, row_ID, height){
 	//add a single cell to the specified row of a table
 	if (cellJSON instanceof Object){ //what to do for complex input
 		//don't create elements for things not to be displayed
@@ -251,7 +336,7 @@ function addCell(cellJSON, row_ID){
 	} else { //what to do for simple cells
 		var p = document.getElementById(row_ID);
 		var newElement = document.createElement('td');
-		newElement.innerHTML = cellJSON
+		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
 		p.appendChild(newElement)
 	}
 }

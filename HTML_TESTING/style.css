@@ -28,6 +28,7 @@ thead{
 
 td{
 	border:1px solid #bbb;
+	vertical-align:top;
 	
 }
 
@@ -39,7 +40,7 @@ th{
 floattext{
 	position:sticky;
 	vertical-align:top;
-	top:20
+	top:60
 }
 
 /* stuckrow{ */
