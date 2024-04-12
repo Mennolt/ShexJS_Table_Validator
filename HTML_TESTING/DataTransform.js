@@ -48,7 +48,7 @@ WHERE
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
 }` //` + item_ID_link[item_ID_link.length - 1] + `
  
-		var response = await fetch(endpoint + "?" + new URLSearchParams({'format' : "json"}), {
+		await fetch(endpoint + "?" + new URLSearchParams({'format' : "json"}), {
 				method : "POST",
 				body: new URLSearchParams({'query' : query}),
 				headers: {
@@ -56,12 +56,16 @@ WHERE
 					'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
 					},
 					mode:'cors'
+			}).then(response => response.json()).then(querydata => {
+				console.log(querydata)
+				var markedUpArry = addMarkupData(arry, querydata)
+				
+				displayTable(markedUpArry)
+				
 			})
-		console.log(response)
-		console.log(response.json())
 
 		//TODO: Use SPARQL Query to convert links into nicer values with embedded links
-		displayTable(arry)
+		//displayTable(arry)
 		addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
 		addElement('output_container', 'div', 'test', JSON.stringify(arry)) ;
 		addElement('output_container', 'div', 'test', '<br>')
@@ -83,11 +87,6 @@ function createArray(x) {
 		const row_vals = [{item : {text : x.node, rowcount : 1}, shape : x.shape.term, 
 		property : null, value : null,
 		error_type : 'conforms'}]
-		/* 
-		var item_link_split = x.node.split("/")
-		var item_ID = item_link_split[item_link_split.length - 1]
-		
-		addRow(row_vals, item_ID + '_0') */
 		
 		return row_vals
 	}
@@ -308,6 +307,7 @@ function displayTable(dataArray){
 }
 
 function addRow(rowJSON, row_ID) {
+	//console.log(rowJSON)
 	//adds a single row to the table
 	//add row element to child cells to:
 	addElement('table_body', 'tr', row_ID, "")
@@ -317,8 +317,8 @@ function addRow(rowJSON, row_ID) {
 	addCell(rowJSON.property, row_ID)
 	addCell(rowJSON.value, row_ID)
 	addCell(rowJSON.error_type, row_ID)
-	addCell("Triple link here please", row_ID)
-	addCell(rowJSON.error_fulltext, row_ID)
+	addCell(rowJSON.triple_link, row_ID)
+	addCell(JSON.stringify(rowJSON.error_fulltext), row_ID)
 }
 
 function addCell(cellJSON, row_ID, height){
@@ -330,8 +330,13 @@ function addCell(cellJSON, row_ID, height){
 			var newElement = document.createElement('td');
 			newElement.setAttribute('class', "highcell");
 			newElement.setAttribute('rowspan', cellJSON.rowcount);
-			newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
+			if (cellJSON.link) {
+				newElement.innerHTML = "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>";
+			} else {
+				newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
+			}
 			p.appendChild(newElement);
+			//todo: adjust so as to add a link via cellJSON.link, possibly split up text
 		}
 	} else { //what to do for simple cells
 		var p = document.getElementById(row_ID);
@@ -339,6 +344,76 @@ function addCell(cellJSON, row_ID, height){
 		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
 		p.appendChild(newElement)
 	}
+}
+
+function addMarkupData(dataArray, markupArray) {
+	//goes through dataArray. For each item property and value tries to add markup information using the markupArray
+	//also cuts shape text prefix
+	
+	for (var i=0; i<dataArray.length;i++){
+		//shape
+		if (dataArray[i].shape instanceof Object) {
+			//is not just the string start, but a string with rowcount applied
+			//then get only the identifying part
+			//add link as link (note: this means if user clicks it it tries to download schema text instead of going to schema page)
+			dataArray[i].shape.link = dataArray[i].shape.text
+			var splitarry = dataArray[i].shape.text.split('/')
+			dataArray[i].shape.text = splitarry[splitarry.length-1]
+		}
+		//Item
+		//TODO: check MarkupArray for correct text
+		if (dataArray[i].item instanceof Object){
+			dataArray[i].item.link = dataArray[i].item.text
+			//var splitarry = dataArray[i].item.text.split('/')
+			dataArray[i].item.text = markupArray.results.bindings[0].item.value//splitarry[splitarry.length-1]
+		}
+		//Property
+		//TODO: check MarkupArray for correct text
+		var working_pj_list = []
+		if (dataArray[i].property instanceof Object){
+			dataArray[i].property.link = dataArray[i].property.text
+			var splitarry = dataArray[i].property.text.split('/')
+			dataArray[i].property.text = splitarry[splitarry.length-1] //if no match found, fail semi-gracefully by showing the ID instead of the entire link
+
+			pID = dataArray[i].property.link.split('/')[dataArray[i].property.link.split('/').length-1]
+			for (var j=0; j<markupArray.results.bindings.length; j++){
+				//check whether link (.property.link) matches markuparray.results.bindings[j].p_property.value
+				query_pID = markupArray.results.bindings[j].p_property.value.split('/')[markupArray.results.bindings[j].p_property.value.split('/').length-1]
+				if (pID == query_pID){
+					dataArray[i].property.text = markupArray.results.bindings[j].p_propertyLabel.value
+					working_pj_list.push(j)
+				}
+			}
+		}
+		//TODO: check MarkupArray for correct text
+		//Value
+		var working_vj_list = []
+		if (dataArray[i].value instanceof Object){
+			dataArray[i].value.link = dataArray[i].value.text
+			var splitarry = dataArray[i].value.text.split('/')
+			dataArray[i].value.text = splitarry[splitarry.length-1] //if no match found, fail semi-gracefully by showing the ID instead of the entire link
+			
+			for (var j=0; j<markupArray.results.bindings.length;j++){
+				query_pID = markupArray.results.bindings[j].simplevalue.value.split('/')[markupArray.results.bindings[j].simplevalue.value.split('/').length-1]
+				if (dataArray[i].value.text == query_pID){
+					dataArray[i].value.text = markupArray.results.bindings[j].simplevalueLabel.value
+					working_vj_list.push(j)
+				}
+			}
+		}
+		
+		//if something was found for both property and value, find the associated statement Link
+		dataArray[i].triple_link = null //fail gracefully if no triple link involved
+		for (j=0; j<working_pj_list.length;j++){
+			for (k=0; k<working_vj_list.length;k++){
+				if (j==k){
+					console.log('found')
+					dataArray[i].triple_link = {text : "Link", rowcount : 1, link : markupArray.results.bindings[j].statementLink.value}
+				}
+			}
+		}
+	}
+	return dataArray
 }
 
 //imported functions:
