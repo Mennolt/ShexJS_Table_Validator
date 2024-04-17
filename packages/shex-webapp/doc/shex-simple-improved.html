@@ -5,7 +5,8 @@
     <title>ShEx2 — Simple Online Validator</title>
     <meta name="description" content="simple ShEx2 demo" />
     <script src="webpacks/jquery-components.min.js"></script>
-    <style>
+    <link rel="stylesheet" href="./style.css">
+	<style>
       h1 { font-size: 1.3em; }
       h1, p, ul { margin: 0; margin-left: .1em; }
       .ShExLogo { float:left; height:1.3em; padding-left: .3em; }
@@ -365,6 +366,16 @@ ul {
       </div>
     </div>
     <div id="results">
+	<!-- this table is a placeholder for results in table mode -->
+		<table class="table">
+			<thead id="table_head">
+				<tr class="headerrow" id='header_row'>
+				</tr>
+			</thead>
+			<tbody id='table_body'>
+			
+			</tbody>
+		</table>
       <h2 class="status"> </h2>
       <div></div>
     </div>
@@ -413,6 +424,7 @@ ul {
     <script src="./ShExBaseApp-Improved.js"></script>
     <script src="./ShExApp.js"></script>
     <script src="../doc/ShExRSchema.js"></script>
+	<script src="./DataTransform2.js"></script>
     <script>new ShExApp(DefaultBase).start();</script>
   </body>
 </html>

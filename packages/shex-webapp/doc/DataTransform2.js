@@ -1,14 +1,18 @@
 async function renderOutput(data) {
 	if (!data){
-		var data = JSON.parse(loadFile('./Responses/Eval_E2_v3.txt'))
+		var data = JSON.parse(loadFile('./Responses/Eval_E3_v3.txt'))
+		console.log("data missing")
 	}
 	
+	var output = "<table><thead><tr>"
 	
 	//create headers for output table
 	headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
 	for (var i = 0 ; i < headers.length; i++) {
+		output = output + "<th>" + headers[i] + "</th>"
 		addElement('header_row', 'th', "", headers[i])
 	}
+	output = output + "</tr></thead>"
 
 	
 	for (var i = 0; i < data.length; i++){
@@ -50,7 +54,7 @@ WHERE
   FILTER(STRSTARTS(STR(?simplevalueLink),  STR(ps:)))
   SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
 }` //` + item_ID_link[item_ID_link.length - 1] + `
- 
+		
 		await fetch(endpoint + "?" + new URLSearchParams({'format' : "json"}), {
 				method : "POST",
 				body: new URLSearchParams({'query' : query}),
@@ -60,22 +64,24 @@ WHERE
 					},
 					mode:'cors'
 			}).then(response => response.json()).then(querydata => {
-				console.log(querydata)
+				//console.log(querydata)
 				var markedUpArry = addMarkupData(arry, querydata)
 				
-				displayTable(markedUpArry)
+				output = output + displayTable(markedUpArry)
 				
 			})
 
-		//TODO: Use SPARQL Query to convert links into nicer values with embedded links
-		//displayTable(arry)
-		addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
+	/* 	addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
 		addElement('output_container', 'div', 'test', JSON.stringify(arry)) ;
 		addElement('output_container', 'div', 'test', '<br>')
 		addElement('output_container', 'div', 'test', JSON.stringify(data[i]))
 		addElement('output_container', 'div', 'test', '<br>')
-		addElement('output_container', 'div', 'test', '<br>')
+		addElement('output_container', 'div', 'test', '<br>') */
+	
+	
 	}
+	output = output + "</table>"
+	return output
 }
 
 function createArray(x) {
@@ -302,51 +308,65 @@ function displayTable(dataArray){
 	var item_ID = item_link_split[item_link_split.length - 1]
 	var row_nr = 0
 	
+	var output = ""
+	
 	for (var i = 0 ; i < dataArray.length; i++) {
 		full_ID = item_ID + "_" + row_nr
-		addRow(dataArray[i], full_ID)
+		output = output + addRow(dataArray[i], full_ID)
 		row_nr+=1
 	}
+	return output
 }
 
 function addRow(rowJSON, row_ID) {
 	//console.log(rowJSON)
 	//adds a single row to the table
 	//add row element to child cells to:
+	var output = "<tr id="+row_ID+">"
 	addElement('table_body', 'tr', row_ID, "")
 	//add all child cells in order
-	addCell(rowJSON.item, row_ID)
-	addCell(rowJSON.shape, row_ID)
-	addCell(rowJSON.property, row_ID)
-	addCell(rowJSON.value, row_ID)
-	addCell(rowJSON.error_type, row_ID)
-	addCell(rowJSON.triple_link, row_ID)
-	addCell(JSON.stringify(rowJSON.error_fulltext), row_ID)
+	output = output + addCell(rowJSON.item, row_ID)
+	output = output + addCell(rowJSON.shape, row_ID)
+	output = output + addCell(rowJSON.property, row_ID)
+	output = output + addCell(rowJSON.value, row_ID)
+	output = output + addCell(rowJSON.error_type, row_ID)
+	output = output + addCell(rowJSON.triple_link, row_ID)
+	output = output + addCell(JSON.stringify(rowJSON.error_fulltext), row_ID)
+	
+	output = output + "</tr>"
+	return output
 }
 
 function addCell(cellJSON, row_ID, height){
 	//add a single cell to the specified row of a table
+	
+	
 	if (cellJSON instanceof Object){ //what to do for complex input
 		//don't create elements for things not to be displayed
 		if (cellJSON.rowcount != 0) {
+			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'"
 			var p = document.getElementById(row_ID);
 			var newElement = document.createElement('td');
 			newElement.setAttribute('class', "highcell");
 			newElement.setAttribute('rowspan', cellJSON.rowcount);
 			if (cellJSON.link) {
+				output = output + "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>"
 				newElement.innerHTML = "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>";
 			} else {
+				output = output + "<floattext>" + cellJSON.text + "</floattext>"
 				newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
 			}
 			p.appendChild(newElement);
 			//todo: adjust so as to add a link via cellJSON.link, possibly split up text
 		}
 	} else { //what to do for simple cells
+		var output = "<floattext>" + cellJSON + "</floattext>"
 		var p = document.getElementById(row_ID);
 		var newElement = document.createElement('td');
 		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
 		p.appendChild(newElement)
 	}
+	return output
 }
 
 function addMarkupData(dataArray, markupArray) {

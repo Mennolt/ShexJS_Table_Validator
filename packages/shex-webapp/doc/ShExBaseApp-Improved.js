@@ -1515,6 +1515,20 @@ class ShExResultsRenderer {
             acc[key] = entry[key];
           return acc
         }, {});
+	  case "table"://new method added in this version
+		//print the table, try to copy the human case as much as possible
+		elt = []
+		// elt = $("<div class='human'/>").append(
+			// $("<span/>").text(
+			// `${ldToTurtle(entry.node, this.caches.inputData.meta.termToLex)}@${fails ? "!" : ""}${this.caches.inputSchema.meta.termToLex(entry.shape)}`
+		// )).addClass(klass);//check what ^ does, if it needs to be replaced
+		
+		if(fails)
+			console.log(entry)
+			renderOutput([entry]).then(output => console.log(output))
+			//elt.append($("<pre>").text(renderOutput([entry])))//replace myFunction with the function from DataTransform.js
+			console.log(elt);
+		
         // falling through to default covers the appinfo case
       default:
         elt = $("<pre/>").text(JSON.stringify(renderMe, null, "  ")).addClass(klass);
