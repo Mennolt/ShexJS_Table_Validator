@@ -1374,12 +1374,27 @@ class DirectShExValidator {
       $(this).data("code").register(validator, ShExWebApp);
     });
     this.renderer = renderer;
+	//if in table mode, initialize the table headers and delete any bits of table already existing
+	var headerrow = document.getElementById("header_row")
+	headerrow.replaceChildren()
+	var tbody = document.getElementById('table_body')
+	tbody.replaceChildren()
+	
+	
+	if ($("#interface").val() == "table"){
+		var headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+		for (var i = 0 ; i < headers.length; i++) {
+			//output = output + "<th>" + headers[i] + "</th>"
+			addElement('header_row', 'th', "", headers[i])
+	}
+	}
   }
   async invoke (fixedMap, validationTracker, time, _done, _currentAction) {
     const ret = this.validator.validateShapeMap(fixedMap, validationTracker);
     time = new Date() - time;
     $("#shapeMap-tabs").attr("title", "last validation: " + time + " ms");
     $("#results .status").text("rendering results...").show();
+	
 
     await Promise.all(ret.map(entry => this.renderer.entry(entry)));
     this.renderer.finish();
@@ -1510,6 +1525,7 @@ class ShExResultsRenderer {
       case "minimal":
         if (fails)
           entry.reason = ShExWebApp.Util.errsToSimple(entry.appinfo).join("\n");
+	    //change renderMe variable to the string you want to print instead of the entire appinfo json
         renderMe = Object.keys(entry).reduce((acc, key) => {
           if (key !== "appinfo")
             acc[key] = entry[key];
@@ -1528,7 +1544,7 @@ class ShExResultsRenderer {
 			renderOutput([entry]).then(output => console.log(output))
 			//elt.append($("<pre>").text(renderOutput([entry])))//replace myFunction with the function from DataTransform.js
 			console.log(elt);
-		
+		break;
         // falling through to default covers the appinfo case
       default:
         elt = $("<pre/>").text(JSON.stringify(renderMe, null, "  ")).addClass(klass);

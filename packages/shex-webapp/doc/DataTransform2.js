@@ -7,11 +7,11 @@ async function renderOutput(data) {
 	var output = "<table><thead><tr>"
 	
 	//create headers for output table
-	headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
-	for (var i = 0 ; i < headers.length; i++) {
-		output = output + "<th>" + headers[i] + "</th>"
-		addElement('header_row', 'th', "", headers[i])
-	}
+	// headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+	// for (var i = 0 ; i < headers.length; i++) {
+		// output = output + "<th>" + headers[i] + "</th>"
+		// addElement('header_row', 'th', "", headers[i])
+	// }
 	output = output + "</tr></thead>"
 
 	
