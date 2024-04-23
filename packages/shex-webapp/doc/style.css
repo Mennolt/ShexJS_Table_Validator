@@ -11,7 +11,7 @@ table{
 	background:#eee;
 	border:1px solid #aaa;
 	border-spacing:0;
-	display:table;
+	display:fixed;
 	width:100%;
 	word-wrap:break-word;
 	text-align:left;

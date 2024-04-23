@@ -1383,9 +1383,18 @@ class DirectShExValidator {
 	
 	if ($("#interface").val() == "table"){
 		var headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+		var widths = [-1,-1,-1,-1,150,100,-1]
 		for (var i = 0 ; i < headers.length; i++) {
 			//output = output + "<th>" + headers[i] + "</th>"
-			addElement('header_row', 'th', "", headers[i])
+			var p = document.getElementById('header_row');
+			var newElement = document.createElement('th');
+			newElement.setAttribute('id', "");
+			if (widths[i] != -1){
+				newElement.setAttribute('style', "width:" + widths[i] + "px")
+			}
+			newElement.innerHTML = headers[i];
+			p.appendChild(newElement);
+			//addElement('header_row', 'th', "", headers[i])
 	}
 	}
   }
