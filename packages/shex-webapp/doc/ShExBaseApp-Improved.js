@@ -1540,10 +1540,10 @@ class ShExResultsRenderer {
 		// )).addClass(klass);//check what ^ does, if it needs to be replaced
 		
 		if(fails)
-			console.log(entry)
-			renderOutput([entry]).then(output => console.log(output))
+			//console.log(entry)
+			renderOutput([entry])//.then(output => console.log(output))
 			//elt.append($("<pre>").text(renderOutput([entry])))//replace myFunction with the function from DataTransform.js
-			console.log(elt);
+			//console.log(elt);
 		break;
         // falling through to default covers the appinfo case
       default:
