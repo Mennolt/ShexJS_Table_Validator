@@ -122,6 +122,9 @@ function createArray(x) {
 		console.log(tableRows[i].shape)
 	} */
 	
+	//remove duplicate rows
+	tableRows = uniqRow(tableRows)
+	
 	//calculate the required rowcounts for each 
 	var prop_counts = [0]
 	var value_counts = [0]
@@ -152,6 +155,8 @@ function createArray(x) {
 			last_shape = tableRows[i].shape
 		}
 	}
+	
+	
 	//for item, shape, property, and value, specify the required rowcount. For items not to be shown, use 0
 	var value_countdown = 0
 	var prop_countdown = 0
@@ -439,6 +444,72 @@ function addMarkupData(dataArray, markupArray) {
 	return dataArray
 }
 
+//adapted from https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array	
+function uniqRow(a) {
+	//strip prefixes for value, property, shape, keep only main domain and actual id
+	var strippedArray = []
+	for (var i=0;i<a.length;i++){
+		strippedArray.push({})
+		try{
+		var val_split = a[i].value.split("/")
+		} catch {val_split = ""}
+		
+		if (val_split instanceof Array){
+			strippedArray[i].val_domain = val_split[2]
+			strippedArray[i].val_id = val_split[val_split.length-1]
+		} else {
+			strippedArray[i].val_domain = ""
+			strippedArray[i].val_id = ""
+		}
+		//property
+		try{
+		var prop_split = a[i].property.split("/")
+		} catch {prop_split = ""}
+		if (prop_split instanceof Array){
+			strippedArray[i].prop_domain = prop_split[2]
+			strippedArray[i].prop_id = prop_split[prop_split.length-1]
+		} else {
+			strippedArray[i].prop_domain = ""
+			strippedArray[i].prop_id = ""
+		}
+		//shape
+		try{
+		shape_split = a[i].shape.split("/")
+		} catch {shape_split = ""}
+		if (shape_split instanceof Array){
+			strippedArray[i].shape_domain = shape_split[2]
+			strippedArray[i].shape_id = shape_split[shape_split.length-1]
+		} else {
+			strippedArray[i].shape_domain = ""
+			strippedArray[i].shape_id = ""
+		}
+		//get ID number
+		strippedArray[i].i = i
+	}
+	
+	var output = []
+	//get only unique values in strippedArray, ignoring i
+	for (var i=0;i<strippedArray.length;i++){
+		duplicate = false
+		for (var j=0;j<i;j++){
+			if (strippedArray[i].val_domain == strippedArray[j].val_domain &&
+				strippedArray[i].val_id == strippedArray[j].val_id &&
+				strippedArray[i].prop_domain == strippedArray[j].prop_domain &&
+				strippedArray[i].prop_id == strippedArray[j].prop_id &&
+				strippedArray[i].shape_domain == strippedArray[j].shape_domain &&
+				strippedArray[i].shape_id == strippedArray[j].shape_id &&
+				a[i].error_type == a[j].error_type){
+					duplicate = true
+				}
+		}
+		if (!duplicate){
+			output.push(a[i])
+		}
+	}
+	
+	return output
+}
+
 //imported functions:
 function loadFile(filePath) {
   var result = null;
@@ -459,3 +530,4 @@ function addElement(parentId, elementTag, elementId, html) {
 		newElement.innerHTML = html;
 		p.appendChild(newElement);
 	}
+
