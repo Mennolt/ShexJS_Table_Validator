@@ -21,6 +21,8 @@
       .schema.textarea, .schema { background-color: #f4f4ff; border: medium solid #e4e4ef; }
       #inputSchema li.selected button { background-color: #e8e8ff; }
       /* #inputSchema .examples { border: medium solid #e4e4ef; } */
+      #meta textarea, .meta { background-color: #fffff4; }
+      #meta li.selected { background-color: #ffffe8; }
       #inputData textarea, .data { background-color: #f4fff4; border: medium solid #e4efe4; font-family: monospace; }
       #inputData li.selected button { background-color: #e8ffe8; }
       #inputSchema li button, #inputData li button {
@@ -182,7 +184,11 @@ button, select { font-size: .8em; }
     </style>
 
     <link href="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.css" rel="stylesheet" type="text/css" />
-    <script src="https://www.w3.org/scripts/jquery/2.1/jquery.min.js"></script>
+    <script>
+      // Load worker early.
+      var ShExWorker = new Worker("shex-simple-worker.js");
+    </script>
+    <script src="https://www.w3.org/scripts/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.js" type="text/javascript"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   </head>
@@ -238,6 +244,17 @@ button, select { font-size: .8em; }
             </ul>
           </div>
             <br/>
+        </div>
+      </div>
+      <div id="meta" style="display: none;">
+        <h2 class="status999">Metadata (Turtle)</h2>
+        <div class="panel">
+          <textarea rows="12" class="data droparea" style="width: 100%"></textarea>
+        </div>
+        <div class="panel">
+          <p>
+            <span class="number">1½.</span> <span class="explanation">Provide labels for backticks.</span>
+          </p>
         </div>
       </div>
       <hr style="clear:both;"/>
@@ -305,6 +322,7 @@ button, select { font-size: .8em; }
       </ul>
       <ul id="fixedMap">
       </ul>
+      <input type="checkbox" id="showMeta"/><label for="showMeta">show metadata pane</label>
     </div>
     <script src="../doc/iri.js"></script>
     <script>
@@ -339,7 +357,9 @@ button, select { font-size: .8em; }
 
     <!-- #endif -->
 
-    <script src="../doc/ShExRSchema.js"></script>
+    <script src="./Util.js"></script>
+    <script src="./ShExRSchema.js"></script>
+    <script src="./examples.js"></script>
     <script src="./shex-simple.js"></script>
   </body>
 </html>

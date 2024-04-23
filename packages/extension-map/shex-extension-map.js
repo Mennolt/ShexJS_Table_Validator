@@ -5,53 +5,23 @@
  *   multiplicity: ...
  */
 
-const {rdfJsTerm2Ld} = require("@shexjs/term");
+var ShExMap = (function () {
 
-const ShExMapCjsModule = function (config) {
+var ShExCore = require("@shexjs/core"); var RdfTerm = ShExCore.RdfTerm;
+var ShExUtil = ShExCore.Util;
+var ShExValidator = require("@shexjs/core").Validator;
+var extensions = require("./lib/extensions");
+var N3 = require("n3");
+var _ = require('underscore');
 
-const ShExTerm = require("@shexjs/term");
-const extensions = require("./lib/extensions");
-const {ShExVisitor} = require("@shexjs/visitor");
-const ShExUtil = require("@shexjs/util");
-const N3Util = require("n3/lib/N3Util");
-const N3DataFactory = require("n3/lib/N3DataFactory").default;
-const materializer = require("./lib/ShExMaterializer")(config);
-const StringToRdfJs = require("./lib/stringToRdfJs");
+var MapExt = "http://shex.io/extensions/Map/#";
+var pattern = /^ *(?:<([^>]*)>|([^:]*):([^ ]*)) *$/;
 
-const MapExt = "http://shex.io/extensions/Map/#";
-const pattern = /^ *(?:<([^>]*)>|([^:]*):([^ ]*)) *$/;
-
-const UNBOUNDED = -1;
+var UNBOUNDED = -1;
 const MAX_MAX_CARD = 50; // @@ don't repeat forever during dev experiments.
 
-function register (validator, api) {
-  if (api === undefined || !('ShExTerm' in api))
-    throw Error('SemAct extensions must be called with register(validator, {ShExTerm, ...)')
-
-  class MaterializerVisitor extends ShExVisitor {
-    constructor (tc, index, curSubjectx) {
-      super();
-      this.tc = tc;
-      this.index = index;
-      this.curSubjectx = curSubjectx;
-    }
-
-    visitShapeRef (shapeRef, ...args) {
-      this.visitShapeDecl(this.index.shapeExprs[shapeRef], ...args);
-      return super.visitShapeRef(shapeRef, ...args);
-    };
-
-    visitValueRef (r, ...args) {
-      this.visitTripleExpr(schema.shapes[r], r, ...args);
-      return this._visitValue(r, ...args);
-    };
-
-    visitTripleConstraint (expr, curSubjectx, nextBNode, target, materializer, schema, bindings) {
-      this.tc(expr, curSubjectx, nextBNode, target, materializer, schema, bindings);
-    };
-  }
-
-  const prefixes = "_prefixes" in validator.schema ?
+function register (validator) {
+  var prefixes = "_prefixes" in validator.schema ?
       validator.schema._prefixes :
       {};
 
@@ -68,88 +38,166 @@ function register (validator, api) {
        * @return {bool} false if the extension failed or did not accept the ctx object.
        */
       dispatch: function (code, ctx, extensionStorage) {
-        function fail (msg) { const e = Error(msg); Error.captureStackTrace(e, fail); throw e; }
+        function fail (msg) { var e = Error(msg); Error.captureStackTrace(e, fail); throw e; }
         function getPrefixedName(bindingName) {
            // already have the fully prefixed binding name ready to go
-           if (typeof bindingName === "string") return bindingName;
+           if (_.isString(bindingName)) return bindingName;
 
            // bindingName is from a pattern match - need to get & expand it with prefix
-            const prefixedName = bindingName[1] ? bindingName[1] :
+            var prefixedName = bindingName[1] ? bindingName[1] :
                 bindingName[2] in prefixes ? (prefixes[bindingName[2]] + bindingName[3]) :
                 fail("unknown prefix " + bindingName[2] + " in \"" + code + "\".");
             return prefixedName;
         }
 
-        const update = function(bindingName, value) {
+        var update = function(bindingName, value) {
 
             if (!bindingName) {
                throw Error("Invocation error: " + MapExt + " code \"" + code + "\" didn't match " + pattern);
             }
 
-            const prefixedName = getPrefixedName(bindingName);
-            const quotedValue = rdfJsTerm2Ld(value);
+            var prefixedName = getPrefixedName(bindingName);
+            var quotedValue = value; // _.isNull(value.match(/"(.+)"/)) ? '"' + value + '"' : value;
 
             validator.semActHandler.results[MapExt][prefixedName] = quotedValue;
             extensionStorage[prefixedName] = quotedValue;
         };
 
         // Do we have a map extension function?
-        if (/.*[(].*[)].*$/s.test(code)) {
-          const results = extensions.lift(code, ctx.object.value, prefixes);
-          for (key in results)
-            update(key, N3DataFactory.literal(results[key]));
+        if (/.*[(].*[)].*$/.test(code)) {
+
+            var results = extensions.lift(code, ctx.object, prefixes);
+            _.mapObject(results, function(val, key) {
+                update(key, val);
+            });
         } else {
-          const bindingName = code.match(pattern);
-          update(bindingName, ctx.triples[0].node || ctx.triples[0].object);
+          var bindingName = code.match(pattern);
+          update(bindingName, ctx.object);
         }
 
-        return []; // There are no evaluation failures. Any parsing problem throws.
+        return true;
       }
     }
   );
-  return {
-    results: validator.semActHandler.results[MapExt],
-    binder,
-    trivialMaterializer,
-    visitTripleConstraint
+  return validator.semActHandler.results[MapExt];
+}
+
+function done (validator) {
+  if (Object.keys(validator.semActHandler.results[MapExt]).length === 0)
+    delete validator.semActHandler.results[MapExt];
+}
+
+function n3ify (ldterm) {
+  if (typeof ldterm !== "object")
+    return ldterm;
+  var ret = "\"" + ldterm.value + "\"";
+  if ("language" in ldterm)
+    return ret + "@" + ldterm.language;
+  if ("type" in ldterm)
+    return ret + "^^" + ldterm.type;
+  return ret;
+}
+
+  // Expands the prefixed name to a full IRI (also when it occurs as a literal's type)
+  function expandPrefixedName (prefixedName, prefixes) {
+    var match = /(?:^|"\^\^)([^:\/#"'\^_]*):[^\/]*$/.exec(prefixedName), prefix, base, index;
+    if (match)
+      prefix = match[1], base = prefixes[prefix], index = match.index;
+    if (base === undefined)
+      return prefixedName;
+
+    // The match index is non-zero when expanding a literal's type
+    return index === 0 ? base + prefixedName.substr(prefix.length + 1)
+                       : prefixedName.substr(0, index + 3) +
+                         base + prefixedName.substr(index + prefix.length + 4);
   }
 
-function visitTripleConstraint (expr, curSubjectx, nextBNode, target, visitor, schema, bindings, recurse, direct, checkValueExpr) {
+function materializer (schema, nextBNode) {
+  var blankNodeCount = 0;
+  const index = schema._index || ShExUtil.index(schema)
+  nextBNode = nextBNode || function () {
+    return '_:b' + blankNodeCount++;
+  };
+  return {
+    materialize: function (bindings, createRoot, shape, target) {
+      shape = !shape || shape === ShExValidator.start ? schema.start : shape;
+      target = target || new N3.Store();
+      // target.addPrefixes(schema.prefixes); // not used, but seems polite
+
       // utility functions for e.g. s = add(B(), P(":value"), L("70", P("xsd:float")))
-      function P (pname) { return expandPrefixedName(pname, schema._prefixes); }
-      function L (value, modifier) { return N3Util.createLiteral(value, modifier); }
+      function P (pname) { return expandPrefixedName(pname, schema.prefixes); }
+      function L (value, modifier) { return N3.Util.createLiteral(value, modifier); }
       function B () { return nextBNode(); }
+      function add (s, p, o) { target.addQuad({ subject: s, predicate: p, object: n3ify(o) }); return s; } // !!check
+
+      var curSubject = createRoot || B();
+      var curSubjectx = {cs: curSubject};
+
+      var v = ShExUtil.Visitor();
+      var oldVisitShapeRef = v.visitShapeRef;
+
+      v.visitShapeRef = function (shapeRef) {
+        this.visitShapeExpr(index.shapeExprs[shapeRef], shapeRef);
+        return oldVisitShapeRef.call(v, shapeRef);
+      };
+
+      v.visitValueRef = function (r) {
+        this.visitExpression(schema.shapes[r.reference], r.reference);
+        return this._visitValue(r);
+      };
+
+      v.visitTripleConstraint = function (expr) {
+        myvisitTripleConstraint(expr, curSubjectx, nextBNode, target, this, schema, bindings);
+      };
+
+      v.visitShapeExpr(shape, "_: -start-");
+      return target;
+    }
+  };
+}
+
+function myvisitTripleConstraint (expr, curSubjectx, nextBNode, target, visitor, schema, bindings, recurse, direct, checkValueExpr) {
+      function P (pname) { return expandPrefixedName(pname, schema._prefixes); }
+      function L (value, modifier) { return N3.Util.createLiteral(value, modifier); }
+      function B () { return nextBNode(); }
+      // utility functions for e.g. s = add(B(), P(":value"), L("70", P("xsd:float")))
       function add (s, p, o) {
-        target.addQuad(StringToRdfJs.n3idQuad2RdfJs(s, p, o));
+        target.addQuad(RdfTerm.externalTriple({
+          subject: s,
+          predicate: p,
+          object: n3ify(o)
+        }, N3.DataFactory));
         return s;
       }
 
-        const mapExts = (expr.semActs || []).filter(function (ext) { return ext.name === MapExt; });
+        var mapExts = (expr.semActs || []).filter(function (ext) { return ext.name === MapExt; });
         if (mapExts.length) {
           mapExts.forEach(function (ext) {
-            const code = ext.code;
-            const m = code.match(pattern);
+            var code = ext.code;
+            var m = code.match(pattern);
 
-            let tripleObject;
+            var tripleObject;
             if (m) { 
-              const arg = m[1] ? m[1] : P(m[2] + ":" + m[3]);
-              const val = n3ify(bindings.get(arg));
-              if (val !== undefined) {
+              var arg = m[1] ? m[1] : P(m[2] + ":" + m[3]);
+              var val = bindings.get(arg);
+              if (!_.isUndefined(val)) {
                 tripleObject = val;
               }
             }
 
             // Is the arg a function? Check if it has parentheses and ends with a closing one
-            if (tripleObject === undefined) {
+            if (_.isUndefined(tripleObject)) {
               if (/[ a-zA-Z0-9]+\(/.test(code)) 
                   tripleObject = extensions.lower(code, bindings, schema.prefixes);
             }
 
-            if (tripleObject === undefined)
+            if (_.isUndefined(tripleObject))
               ; // console.warn('Not in bindings: ',code);
             else if (expr.inverse)
+            //add(tripleObject, expr.predicate, curSubject);
               add(tripleObject, expr.predicate, curSubjectx.cs);
             else
+            //add(curSubject    , expr.predicate, tripleObject);
               add(curSubjectx.cs, expr.predicate, tripleObject);
           });
 
@@ -157,19 +205,19 @@ function visitTripleConstraint (expr, curSubjectx, nextBNode, target, visitor, s
           if (expr.inverse)
             add(expr.valueExpr.values[0], expr.predicate, curSubjectx.cs);
           else
-            add(curSubjectx.cs, expr.predicate, n3ify(expr.valueExpr.values[0]));
+            add(curSubjectx.cs, expr.predicate, expr.valueExpr.values[0]);
 
         } else {
-          const oldSubject = curSubjectx.cs;
-          let maxAdd = "max" in expr ? expr.max === UNBOUNDED ? Infinity : expr.max : 1;
+          var oldSubject = curSubjectx.cs;
+          var maxAdd = "max" in expr ? expr.max === UNBOUNDED ? Infinity : expr.max : 1;
           if (maxAdd > MAX_MAX_CARD)
             maxAdd = MAX_MAX_CARD;
           if (!recurse)
             maxAdd = 1; // no grounds to know how much to repeat.
-          for (let repetition = 0; repetition < maxAdd; ++repetition) {
+          for (var repetition = 0; repetition < maxAdd; ++repetition) {
             curSubjectx.cs = B();
             if (recurse) {
-              const res = checkValueExpr(StringToRdfJs.n3idTerm2RdfJs(curSubjectx.cs), expr.valueExpr, recurse, direct)
+              var res = checkValueExpr(curSubjectx.cs, expr.valueExpr, recurse, direct)
               if ("errors" in res)
                 break;
             }
@@ -180,59 +228,70 @@ function visitTripleConstraint (expr, curSubjectx, nextBNode, target, visitor, s
           }
           visitor._maybeSet(expr, { type: "TripleConstraint" }, "TripleConstraint",
                          ["inverse", "negated", "predicate", "valueExpr",
-                          "min", "max", "annotations", "semActs"], null, curSubjectx, nextBNode, target, visitor, schema, bindings)
+                          "min", "max", "annotations", "semActs"])
           curSubjectx.cs = oldSubject;
         }
       }
+function extractBindingsDelMe (soln, min, max, depth) {
+  if ("min" in soln && soln.min < min)
+    min = soln.min
+  var myMax = "max" in soln ?
+      (soln.max === UNBOUNDED ?
+       Infinity :
+       soln.max) :
+      1;
+  if (myMax > max)
+    max = myMax
 
-function trivialMaterializer (schema, nextBNode) {
-  let blankNodeCount = 0;
-  const index = schema._index || ShExUtil.index(schema);
-  nextBNode = nextBNode || function () {
-    return '_:b' + blankNodeCount++;
-  };
-  return {
-    materialize: function (bindings, createRoot, shape, target) {
-      shape = !shape || shape === validator.Start
-        ? schema.start
-        : schema.shapes.indexOf(shape) !== -1
-        ? shape
-        : this._lookupShape(shape);
-      target = target || new config.rdfjs.Store();
-      // target.addPrefixes(schema.prefixes); // not used, but seems polite
+  function walkExpressions (s) {
+    return s.expressions.reduce((inner, e) => {
+      return inner.concat(extractBindingsDelMe(e, min, max, depth+1));
+    }, []);
+  }
 
-      // utility functions for e.g. s = add(B(), P(":value"), L("70", P("xsd:float")))
-      function P (pname) { return expandPrefixedName(pname, schema.prefixes); }
-      function L (value, modifier) { return N3Util.createLiteral(value, modifier); }
-      function B () { return nextBNode(); }
-      function add (s, p, o) { target.addTriple({ subject: s, predicate: p, object: n3ify(o) }); return s; }
+  function walkTriple (s) {
+    var fromTriple = "extensions" in s && MapExt in s.extensions ?
+        [{ depth: depth, min: min, max: max, obj: s.extensions[MapExt] }] :
+        [];
+    return "referenced" in s ?
+      fromTriple.concat(extractBindingsDelMe(s.referenced.solution, min, max, depth+1)) :
+      fromTriple;
+  }
 
-      const curSubject = createRoot || B();
-      const curSubjectx = {cs: curSubject};
+  function structuralError (msg) { throw Error(msg); }
 
-      const v = new MaterializerVisitor(visitTripleConstraint, index);
-      v.visitShapeExpr(shape, curSubjectx, nextBNode, target, v, schema, bindings);// , curSubjectx, nextBNode, target, materializer
-      return target;
-    }
-  };
+  var walk = // function to explore each solution
+      soln.type === "someOfSolutions" ||
+      soln.type === "eachOfSolutions" ? walkExpressions :
+      soln.type === "tripleConstraintSolutions" ? walkTriple :
+      structuralError("unknown type: " + soln.type);
+
+  if (myMax > 1) // preserve important associations:
+    // map: e.g. [[1,2],[3,4]]
+    // [walk(soln.solutions[0]), walk(soln.solutions[1]),...]
+    return soln.solutions.map(walk);
+  else // hide unimportant nesting:
+    // flatmap: e.g. [1,2,3,4]
+    // [].concat(walk(soln.solutions[0])).concat(walk(soln.solutions[1]))...
+    return [].concat.apply([], soln.solutions.map(walk));
 }
 
 function binder (tree) {
-  let stack = []; // e.g. [2, 1] for v="http://shex.io/extensions/Map/#BPDAM-XXX"
-  const globals = {}; // !! delme
+  var stack = []; // e.g. [2, 1] for v="http://shex.io/extensions/Map/#BPDAM-XXX"
+  var globals = {}; // !! delme
   //
 
   /**
-   * returns: { const->count }
+   * returns: { var->count }
    */
   function _mults (obj) {
-    const rays = [];
-    const objs = [];
-    const counts = Object.keys(obj).reduce((r, k) => {
-      let toAdd = null;
-      if (typeof obj[k] === "object" && !("value" in obj[k])) {
+    var rays = [];
+    var objs = [];
+    var counts = Object.keys(obj).reduce((r, k) => {
+      var toAdd = null;
+      if (typeof obj[k] === "object") {
         toAdd = _mults(obj[k]);
-        if (Array.isArray(obj[k]))
+        if (obj[k].constructor === Array)
           rays.push(k);
         else
           objs.push(k);
@@ -244,11 +303,11 @@ function binder (tree) {
     }, {});
     if (rays.length > 0) {
       objs.forEach(i => {
-        const novel = Object.keys(obj[i]).filter(k => {
+        var novel = Object.keys(obj[i]).filter(k => {
           return counts[k] === 1;
         });
         if (novel.length) {
-          const n2 = novel.reduce((r, k) => {
+          var n2 = novel.reduce((r, k) => {
             r[k] = obj[i][k];
             return r;
           }, {});
@@ -265,21 +324,21 @@ function binder (tree) {
     return counts;
   }
   function _add (l, r) {
-    const ret = Object.assign({}, l);
+    var ret = Object.assign({}, l);
     return Object.keys(r).reduce((ret, k) => {
-      const add = k in r ? r[k] : 1;
+      var add = k in r ? r[k] : 1;
       ret[k] = k in ret ? ret[k] + add : add;
       return ret;
     }, ret);
   }
   function _make (k, v) {
-    const ret = {};
+    var ret = {};
     ret[k] = v;
     return ret;
   }
   function _cross (list, map) {
-    for (let listIndex in list) {
-      if (Array.isArray(list[listIndex])) {
+    for (var listIndex in list) {
+      if (list[listIndex].constructor === Array) {
         _cross(list[listIndex], map);
       } else {
         Object.keys(map).forEach(mapKey => {
@@ -292,19 +351,19 @@ function binder (tree) {
   }
   _mults(tree);
   function _simplify (list) {
-    const ret = list.reduce((r, elt) => {
+    var ret = list.reduce((r, elt) => {
       return r.concat(
-        Array.isArray(elt) ?
+        elt.constructor === Array ?
           _simplify(elt) :
           elt
       );
     }, []);
     return ret.length === 1 ? ret[0] : ret;
   }
-  tree = Array.isArray(tree) ? _simplify(tree) : [tree]; // expects an array
+  tree = tree.constructor === Array ? _simplify(tree) : [tree]; // expects an array
 
-  // const globals = tree.reduce((r, e, idx) => {
-  //   if (!Array.isArray(e)) {
+  // var globals = tree.reduce((r, e, idx) => {
+  //   if (e.constructor !== Array) {
   //     Object.keys(e).forEach(k => {
   //       r[k] = e[k];
   //     });
@@ -319,11 +378,11 @@ function binder (tree) {
       return undefined;
     if (v in globals)
       return globals[v];
-    const nextStack = stack.slice();
-    let next = diveIntoObj(nextStack); // no effect if in obj
+    var nextStack = stack.slice();
+    var next = diveIntoObj(nextStack); // no effect if in obj
     while (!(v in next)) {
-      let last;
-      while(!Array.isArray(next)) {
+      var last;
+      while(next.constructor !== Array) {
         last = nextStack.pop();
         next = getObj(nextStack);
       }
@@ -337,7 +396,7 @@ function binder (tree) {
       // throw Error ("can't advance to find " + v + " in " + JSON.stringify(next));
     }
     stack = nextStack.slice();
-    const ret = next[v];
+    var ret = next[v];
     delete next[v];
     return ret;
 
@@ -348,7 +407,7 @@ function binder (tree) {
     }
 
     function diveIntoObj (s) {
-      while (Array.isArray(getObj(s)))
+      while (getObj(s).constructor === Array)
         s.push(0);
       return getObj(s);
     }
@@ -356,99 +415,22 @@ function binder (tree) {
   return {get: getter};
 }
 
-}
-
-function done (validator) {
-  if (Object.keys(validator.semActHandler.results[MapExt]).length === 0)
-    delete validator.semActHandler.results[MapExt];
-}
-
-function n3ify (ldterm) {
-  if (typeof ldterm !== "object")
-    return ldterm;
-  const ret = "\"" + ldterm.value + "\"";
-  if ("language" in ldterm)
-    return ret + "@" + ldterm.language;
-  if ("type" in ldterm)
-    return ret + "^^" + ldterm.type;
-  return ret;
-}
-
-  // Expands the prefixed name to a full IRI (also when it occurs as a literal's type)
-  function expandPrefixedName (prefixedName, prefixes) {
-    const match = /(?:^|"\^\^)([^:\/#"'\^_]*):[^\/]*$/.exec(prefixedName);
-    let prefix, base, index;
-    if (match)
-      prefix = match[1], base = prefixes[prefix], index = match.index;
-    if (base === undefined)
-      return prefixedName;
-
-    // The match index is non-zero when expanding a literal's type
-    return index === 0 ? base + prefixedName.substr(prefix.length + 1)
-                       : prefixedName.substr(0, index + 3) +
-                         base + prefixedName.substr(index + prefix.length + 4);
-  }
-
-function extractBindingsDelMe (soln, min, max, depth) {
-  if ("min" in soln && soln.min < min)
-    min = soln.min
-  const myMax = "max" in soln ?
-      (soln.max === UNBOUNDED ?
-       Infinity :
-       soln.max) :
-      1;
-  if (myMax > max)
-    max = myMax
-
-  function walkExpressions (s) {
-    return s.expressions.reduce((inner, e) => {
-      return inner.concat(extractBindingsDelMe(e, min, max, depth+1));
-    }, []);
-  }
-
-  function walkTriple (s) {
-    const fromTriple = "extensions" in s && MapExt in s.extensions ?
-        [{ depth: depth, min: min, max: max, obj: s.extensions[MapExt] }] :
-        [];
-    return "referenced" in s ?
-      fromTriple.concat(extractBindingsDelMe(s.referenced.solution, min, max, depth+1)) :
-      fromTriple;
-  }
-
-  function structuralError (msg) { throw Error(msg); }
-
-  const walk = // function to explore each solution
-      soln.type === "someOfSolutions" ||
-      soln.type === "eachOfSolutions" ? walkExpressions :
-      soln.type === "tripleConstraintSolutions" ? walkTriple :
-      structuralError("unknown type: " + soln.type);
-
-  if (myMax > 1) // preserve important associations:
-    // map: e.g. [[1,2],[3,4]]
-    // [walk(soln.solutions[0]), walk(soln.solutions[1]),...]
-    return soln.solutions.map(walk);
-  else // hide unimportant nesting:
-    // flatmap: e.g. [1,2,3,4]
-    // [].concat(walk(soln.solutions[0])).concat(walk(soln.solutions[1]))...
-    return [].concat.apply([], soln.solutions.map(walk));
-}
-
 return {
   register: register,
   done: done,
   materializer: materializer,
-  // binder: binder,
+  binder: binder,
   url: MapExt,
-  // visitTripleConstraint: myvisitTripleConstraint
-  extension: {
-    hashmap: require("./lib/hashmap_extension"),
-    regex: require("./lib/regex_extension")
-  },
-  extensions: require("./lib/extensions"),
-  utils: require("./lib/extension-utils"),
+  visitTripleConstraint: myvisitTripleConstraint
 };
 
+})();
+ShExMap.extension = {
+  hashmap: require("./lib/hashmap_extension.js"),
+  regex: require("./lib/regex_extension.js")
 };
+ShExMap.extensions = require("./lib/extensions.js");
+ShExMap.utils = require("./lib/extension-utils.js");
 
 if (typeof require !== 'undefined' && typeof exports !== 'undefined')
-  module.exports = ShExMapCjsModule;
+  module.exports = ShExMap;
