@@ -294,6 +294,10 @@ ul {
     </div>
 
     <div id="inputarea">
+	  Query Endpoint (if not validatortest): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
+	  </br>
+	  Wikibase prefix: <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud/" style="width:250px"></textarea>
+	  </br>
       <div id="inputSchema" class="panel">
         <h2 class="status"> </h2>
         <textarea rows="25" class="schema droparea" style="width: 100%" spellcheck="false"></textarea>
@@ -367,7 +371,7 @@ ul {
     </div>
     <div id="results">
 	<!-- this table is a placeholder for results in table mode -->
-		<table class="table">
+		<table class="results">
 			<thead id="table_head">
 				<tr class="headerrow" id='header_row'>
 				</tr>

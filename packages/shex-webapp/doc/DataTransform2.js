@@ -7,6 +7,7 @@ async function renderOutput(data) {
 	var output = "<table><thead><tr>"
 	
 	//create headers for output table
+	//NOTE: THIS MOVED OUTSIDE FUNCTION TO ACCOMODATE RENDERING METHOD
 	// headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
 	// for (var i = 0 ; i < headers.length; i++) {
 		// output = output + "<th>" + headers[i] + "</th>"
@@ -14,28 +15,57 @@ async function renderOutput(data) {
 	// }
 	output = output + "</tr></thead>"
 
+	//construct query prefix string  & endpoint via input fields
+	//for final release: change default to wikidata
+	var endpoint = "https://validatortest.wikibase.cloud/query/sparql"
+	if ($("#query_endpoint").val() != ""){
+		console.log("yes")
+		//overwrite query endpoint if it has content
+		endpoint = $("#query_endpoint").val() 
+	}
+	var wikibase_pre = "https://validatortest.wikibase.cloud/"
+	if ($("#wikibase_prefix").val() != ""){
+		wikibase_pre = $("#wikibase_prefix").val()
+	}
+	prefixes = `
+PREFIX wd: <` + wikibase_pre + `/entity/>
+PREFIX p: <` + wikibase_pre + `/prop/>
+PREFIX ps: <` + wikibase_pre + `/prop/statement/>
+PREFIX wdt: <` + wikibase_pre + `/prop/direct/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX pq: <` + wikibase_pre + `/prop/qualifier/>
+PREFIX pr:  <` + wikibase_pre + `/prop/reference/>
+#specific prefixes
+PREFIX wdv: <` + wikibase_pre + `/entity/value/>
+PREFIX s: <` + wikibase_pre + `/entity/statement/>
+PREFIX psv: <` + wikibase_pre + `/prop/statement/value/>
+`
+	
+	
+
+// PREFIX wd: <https://validatortest.wikibase.cloud/entity/>
+// PREFIX p: <https://validatortest.wikibase.cloud/prop/>
+// PREFIX ps: <https://validatortest.wikibase.cloud/prop/statement/>
+// PREFIX wdt: <https://validatortest.wikibase.cloud/prop/direct/>
+// PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+// PREFIX prov: <http://www.w3.org/ns/prov#>
+// PREFIX pq: <https://validatortest.wikibase.cloud/prop/qualifier/>
+// PREFIX pr:  <https://validatortest.wikibase.cloud/prop/reference/>
+// #specific prefixes
+// PREFIX wdv: <https://validatortest.wikibase.cloud/entity/value/>
+// PREFIX s: <https://validatortest.wikibase.cloud/entity/statement/>
+// PREFIX psv: <https://validatortest.wikibase.cloud/prop/statement/value/>
+
 	
 	for (var i = 0; i < data.length; i++){
 		var arry = createArray(data[i])
 		
 		
 		// get data required for pretty display
-		var endpoint = "https://validatortest.wikibase.cloud/query/sparql"
+		
 		var item_ID_link = data[i].node.split('/')
-		var query = `
-PREFIX wd: <https://validatortest.wikibase.cloud/entity/>
-PREFIX p: <https://validatortest.wikibase.cloud/prop/>
-PREFIX ps: <https://validatortest.wikibase.cloud/prop/statement/>
-PREFIX wdt: <https://validatortest.wikibase.cloud/prop/direct/>
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX prov: <http://www.w3.org/ns/prov#>
-PREFIX pq: <https://validatortest.wikibase.cloud/prop/qualifier/>
-PREFIX pr:  <https://validatortest.wikibase.cloud/prop/reference/>
-#specific prefixes
-PREFIX wdv: <https://validatortest.wikibase.cloud/entity/value/>
-PREFIX s: <https://validatortest.wikibase.cloud/entity/statement/>
-PREFIX psv: <https://validatortest.wikibase.cloud/prop/statement/value/>
-
+		var query = prefixes + `
 
 SELECT ?item ?p_property ?p_propertyLabel ?statementLink ?simplevalue ?simplevalueLabel 
 WHERE
@@ -64,7 +94,6 @@ WHERE
 					},
 					mode:'cors'
 			}).then(response => response.json()).then(querydata => {
-				//console.log(querydata)
 				var markedUpArry = addMarkupData(arry, querydata)
 				
 				output = output + displayTable(markedUpArry)
@@ -235,7 +264,14 @@ function goThroughJSON(data) {
 		output = goThroughJSON(data.errors)
 	} else {
 		//if you reached the bottom of the error stack, create a row for this error
+		//if the item is still wrapped in an array (happens in some cases with data from wikidata) go through al items in that array
+		if (data instanceof Array) {
+			for (var i=0;i<data.length;i++){
+				output.concat(goThroughJSON(data[i]))
+			}
+		} else {
 		output = createArrayRow(data)
+		}
 	}
 	//make sure the output is an array containing row JSON objects
 	if (output.constructor === objectConstructor) {
@@ -274,12 +310,15 @@ function createArrayRow(item) {
 		output.property = item.triple.predicate.value
 		output.value = item.triple.object.value
 	} else if (item.type == "TypeMismatch") {
+		output.error_type = item.type
 		console.log(item)
 		console.log('type mismatch detected! Implement to continue')
 	} else if (item.type == 'SemActFailure') {
+		output.error_type = item.type
 		console.log(item)
 		console.log('Semaphote Act Failure detected! Implement to continue')
 	} else if (item.type == 'ClosedShapeViolation') {
+		output.error_type = item.type
 		console.log(item)
 		console.log('Closed Shape Violation detected! Implement to continue')
 	}else {
@@ -288,6 +327,8 @@ function createArrayRow(item) {
 		output.property = null
 		output.value = null
 	}
+	console.log(item)
+	console.log(output)
 	return output
 }
 
