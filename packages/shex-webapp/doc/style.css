@@ -11,10 +11,15 @@ table{
 	background:#eee;
 	border:1px solid #aaa;
 	border-spacing:0;
-	display:fixed;
-	width:100%;
+	display:table;
+	/* width:100%; */
 	word-wrap:break-word;
 	text-align:left;
+}
+.results{
+	display:block;
+	min-width:600px;
+	max-width:1400px;
 }
 
 thead{
@@ -40,7 +45,9 @@ th{
 floattext{
 	position:sticky;
 	vertical-align:top;
-	top:60
+	top:60;
+	word-wrap:break-word;
+	white-space:normal;
 }
 
 /* stuckrow{ */
