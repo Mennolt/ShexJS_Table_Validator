@@ -17,13 +17,12 @@ async function renderOutput(data) {
 
 	//construct query prefix string  & endpoint via input fields
 	//for final release: change default to wikidata
-	var endpoint = "https://validatortest.wikibase.cloud/query/sparql"
+	var endpoint = "https://query.wikidata.org/sparql"//"https://validatortest.wikibase.cloud/query/sparql"
 	if ($("#query_endpoint").val() != ""){
-		console.log("yes")
 		//overwrite query endpoint if it has content
 		endpoint = $("#query_endpoint").val() 
 	}
-	var wikibase_pre = "https://validatortest.wikibase.cloud/"
+	var wikibase_pre = "http://www.wikidata.org"//"https://validatortest.wikibase.cloud"
 	if ($("#wikibase_prefix").val() != ""){
 		wikibase_pre = $("#wikibase_prefix").val()
 	}
@@ -82,7 +81,9 @@ WHERE
   FILTER(STRSTARTS(STR(?property), STR(p:))) 
   #BIND(STR(?simplevalueLink) as ?xxx)
   FILTER(STRSTARTS(STR(?simplevalueLink),  STR(ps:)))
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } # Helps get the label in your language, if not, then en language
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # Helps get the label in your language, if not, then en language
+  #only get English language item names
+  FILTER(LANGMATCHES(LANG(?item), "en"))
 }` //` + item_ID_link[item_ID_link.length - 1] + `
 		
 		await fetch(endpoint + "?" + new URLSearchParams({'format' : "json"}), {

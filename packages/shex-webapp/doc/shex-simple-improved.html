@@ -217,7 +217,7 @@ ul {
     </svg>
 
     <div id="title">
-      <img src="ShEx-bones-min.svg" class="ShExLogo" alt="ShEx Icon"/><h1 style="float:left;">ShEx2 — Simple Online Validator - Improved</h1>
+      <img src="ShEx-bones-min.svg" class="ShExLogo" alt="ShEx Icon"/><h1 style="float:left;">ShEx2 — Tabular Online Validator</h1>
       <!-- <ul id="navlist" style="float:left; padding-left: 1em;"> -->
       <!--   <li>‣ <span class="heading">drag and drop to:</span> <input type="file" id="schema-upload" class="inputfile" data-target="#inputSchema textarea"/> <label for="schema-upload" class="schema">ShEx schema</label>, <input type="file" id="data-upload" class="inputfile" data-target="#inputData textarea"/> <label for="data-upload" class="data">RDF data</label></li> -->
       <!-- </ul> -->
@@ -294,9 +294,9 @@ ul {
     </div>
 
     <div id="inputarea">
-	  Query Endpoint (if not validatortest): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
+	  Query Endpoint (if not wikidata): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
 	  </br>
-	  Wikibase prefix: <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud/" style="width:250px"></textarea>
+	  Wikibase prefix (if not wikidata): <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud/" style="width:250px"></textarea>
 	  </br>
       <div id="inputSchema" class="panel">
         <h2 class="status"> </h2>
@@ -344,7 +344,7 @@ ul {
       </div>
       <div id="inputData" class="panel">
         <h2 class="status"> </h2>
-        <textarea rows="25" class="data droparea" style="width: 100%" spellcheck="false"></textarea>
+        <textarea rows="25" class="data droparea" style="width: 100%" spellcheck="false">Endpoint: https://query.wikidata.org/sparql</textarea>
         <div style="margin-left: .1em;">
           <div class="passes" style="float:left; display:none;">
             <p></p>
