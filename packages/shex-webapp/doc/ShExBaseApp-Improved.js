@@ -1375,7 +1375,7 @@ class DirectShExValidator {
     });
     this.renderer = renderer;
 	//if in table mode, initialize the table headers and delete any bits of table already existing
-	var headerrow = document.getElementById("header_row")
+	var headerrow = document.getElementById("headerrow")
 	headerrow.replaceChildren()
 	var tbody = document.getElementById('table_body')
 	tbody.replaceChildren()
@@ -1386,7 +1386,7 @@ class DirectShExValidator {
 		var widths = [-1,-1,-1,-1,150,100,-1]
 		for (var i = 0 ; i < headers.length; i++) {
 			//output = output + "<th>" + headers[i] + "</th>"
-			var p = document.getElementById('header_row');
+			var p = document.getElementById('headerrow');
 			var newElement = document.createElement('th');
 			newElement.setAttribute('id', "");
 			if (widths[i] != -1){
