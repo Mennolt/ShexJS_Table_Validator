@@ -393,12 +393,13 @@ function addRow(rowJSON, row_ID) {
 function addCell(cellJSON, row_ID, bg_colour){
 	//add a single cell to the specified row of a table
 	
-	var p = document.getElementById(row_ID);
-	var newElement = document.createElement('td');
+	
 	
 	if (cellJSON instanceof Object){ //what to do for complex input
 		//don't create elements for things not to be displayed
 		if (cellJSON.rowcount != 0) {
+			var p = document.getElementById(row_ID);
+			var newElement = document.createElement('td');
 			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'"
 			
 			newElement.setAttribute('class', "highcell");
@@ -410,16 +411,20 @@ function addCell(cellJSON, row_ID, bg_colour){
 				output = output + "<floattext>" + cellJSON.text + "</floattext>"
 				newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
 			}
+			
+			//recolour to desired colour
+			newElement.setAttribute("style", "background-color:"+bg_colour)
+			p.appendChild(newElement)
 		}
 	} else { //what to do for simple cells
+		var p = document.getElementById(row_ID);
+		var newElement = document.createElement('td');
 		var output = "<floattext>" + cellJSON + "</floattext>"
 		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
-		
+		p.appendChild(newElement)
 	}
 	
-	//recolour to desired colour
-	newElement.setAttribute("style", "background-color:"+bg_colour)
-	p.appendChild(newElement)
+	
 	return output
 }
 
