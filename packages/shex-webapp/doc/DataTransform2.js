@@ -1,7 +1,6 @@
 async function renderOutput(data) {
 	if (!data){
-		var data = JSON.parse(loadFile('./Responses/Eval_E3_v3.txt'))
-		console.log("data missing")
+		console.log("data missing at time of table render")
 	}
 	
 	var output = "<table><thead><tr>"
@@ -101,12 +100,12 @@ WHERE
 				
 			})
 
-	/* 	addElement('output_container', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
-		addElement('output_container', 'div', 'test', JSON.stringify(arry)) ;
-		addElement('output_container', 'div', 'test', '<br>')
-		addElement('output_container', 'div', 'test', JSON.stringify(data[i]))
-		addElement('output_container', 'div', 'test', '<br>')
-		addElement('output_container', 'div', 'test', '<br>') */
+	 	// addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
+		// addElement('results', 'div', 'test', JSON.stringify(arry)) ;
+		// addElement('results', 'div', 'test', '<br>')
+		// addElement('results', 'div', 'test', JSON.stringify(data[i]))
+		// addElement('results', 'div', 'test', '<br>')
+		// addElement('results', 'div', 'test', '<br>')  
 	
 	
 	}
@@ -371,29 +370,37 @@ function addRow(rowJSON, row_ID) {
 	//add row element to child cells to:
 	var output = "<tr id="+row_ID+">"
 	addElement('table_body', 'tr', row_ID, "")
+	
+	//get conformance information
+	var conforms = null
+	if (rowJSON.error_type == "conforms"){
+		conforms = "#e4ffe4"
+	}
+	
 	//add all child cells in order
-	output = output + addCell(rowJSON.item, row_ID)
-	output = output + addCell(rowJSON.shape, row_ID)
-	output = output + addCell(rowJSON.property, row_ID)
-	output = output + addCell(rowJSON.value, row_ID)
-	output = output + addCell(rowJSON.error_type, row_ID)
-	output = output + addCell(rowJSON.triple_link, row_ID)
-	output = output + addCell(JSON.stringify(rowJSON.error_fulltext), row_ID)
+	output = output + addCell(rowJSON.item, row_ID, conforms)
+	output = output + addCell(rowJSON.shape, row_ID, conforms)
+	output = output + addCell(rowJSON.property, row_ID, conforms)
+	output = output + addCell(rowJSON.value, row_ID, conforms)
+	output = output + addCell(rowJSON.error_type, row_ID, conforms)
+	output = output + addCell(rowJSON.triple_link, row_ID, conforms)
+	output = output + addCell(JSON.stringify(rowJSON.error_fulltext), row_ID, conforms)
 	
 	output = output + "</tr>"
 	return output
 }
 
-function addCell(cellJSON, row_ID, height){
+function addCell(cellJSON, row_ID, bg_colour){
 	//add a single cell to the specified row of a table
 	
+	var p = document.getElementById(row_ID);
+	var newElement = document.createElement('td');
 	
 	if (cellJSON instanceof Object){ //what to do for complex input
 		//don't create elements for things not to be displayed
 		if (cellJSON.rowcount != 0) {
 			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'"
-			var p = document.getElementById(row_ID);
-			var newElement = document.createElement('td');
+			
 			newElement.setAttribute('class', "highcell");
 			newElement.setAttribute('rowspan', cellJSON.rowcount);
 			if (cellJSON.link) {
@@ -403,16 +410,16 @@ function addCell(cellJSON, row_ID, height){
 				output = output + "<floattext>" + cellJSON.text + "</floattext>"
 				newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
 			}
-			p.appendChild(newElement);
-			//todo: adjust so as to add a link via cellJSON.link, possibly split up text
 		}
 	} else { //what to do for simple cells
 		var output = "<floattext>" + cellJSON + "</floattext>"
-		var p = document.getElementById(row_ID);
-		var newElement = document.createElement('td');
 		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
-		p.appendChild(newElement)
+		
 	}
+	
+	//recolour to desired colour
+	newElement.setAttribute("style", "background-color:"+bg_colour)
+	p.appendChild(newElement)
 	return output
 }
 

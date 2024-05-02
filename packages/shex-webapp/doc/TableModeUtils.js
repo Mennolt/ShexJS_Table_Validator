@@ -13,7 +13,6 @@ function tableSelectCheck(selector) {
 
 function revealTable() {
 	//if currently in table mode, shows the table results div
-	console.log($("#interface").val())
 	if($("#interface").val()=="table") {
 		document.getElementById("table-mode-results").style.display = "block";
 	} else {

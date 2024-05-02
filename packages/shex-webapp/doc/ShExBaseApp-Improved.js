@@ -1548,11 +1548,12 @@ class ShExResultsRenderer {
 			// `${ldToTurtle(entry.node, this.caches.inputData.meta.termToLex)}@${fails ? "!" : ""}${this.caches.inputSchema.meta.termToLex(entry.shape)}`
 		// )).addClass(klass);//check what ^ does, if it needs to be replaced
 		
-		if(fails)
+		if(fails || $("#show-conformant").val()=="on"){
 			//console.log(entry)
 			renderOutput([entry])//.then(output => console.log(output))
-			//elt.append($("<pre>").text(renderOutput([entry])))//replace myFunction with the function from DataTransform.js
+			//elt.append($("<pre>").text(renderOutput([entry])))
 			//console.log(elt);
+		}
 		break;
         // falling through to default covers the appinfo case
       default:

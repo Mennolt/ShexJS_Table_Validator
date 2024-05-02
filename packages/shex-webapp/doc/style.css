@@ -7,6 +7,11 @@
   padding: 100px;
 } */
 
+#test {
+	word-break: break-all;
+    white-space: normal;
+}
+
 table{
 	background:#eee;
 	border:1px solid #aaa;
