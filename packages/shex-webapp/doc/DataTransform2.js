@@ -100,12 +100,12 @@ WHERE
 				
 			})
 
-	 	// addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
-		// addElement('results', 'div', 'test', JSON.stringify(arry)) ;
-		// addElement('results', 'div', 'test', '<br>')
-		// addElement('results', 'div', 'test', JSON.stringify(data[i]))
-		// addElement('results', 'div', 'test', '<br>')
-		// addElement('results', 'div', 'test', '<br>')  
+	 	addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
+		addElement('results', 'div', 'test', JSON.stringify(arry)) ;
+		addElement('results', 'div', 'test', '<br>')
+		addElement('results', 'div', 'test', JSON.stringify(data[i]))
+		addElement('results', 'div', 'test', '<br>')
+		addElement('results', 'div', 'test', '<br>')  
 	
 	
 	}
@@ -122,7 +122,7 @@ function createArray(x) {
 	
 	if (x.status === 'conformant') {
 		//if here: add 1 row containing item name, then conformant in all other cells
-		const row_vals = [{item : {text : x.node, rowcount : 1}, shape : x.shape.term, 
+		const row_vals = [{item : {text : [x.node], rowcount : 1}, shape : x.shape.term, 
 		property : null, value : null,
 		error_type : 'conforms'}]
 		
@@ -135,21 +135,10 @@ function createArray(x) {
 	
 	//sort rows, starting on the last column and going backwards towards the first
 	tableRows.sort(create_compare_by_attr('error_type'))
-	/* for (var i = 0 ; i < tableRows.length;i++){
-		console.log(tableRows[i].error_type)
-	} */
 	tableRows.sort(create_compare_by_attr('value'))
-	/* for (var i = 0 ; i < tableRows.length;i++){
-		console.log(tableRows[i].value)
-	} */
 	tableRows.sort(create_compare_by_attr('property'))
-	/* for (var i = 0 ; i < tableRows.length;i++){
-		console.log(tableRows[i].property)
-	} */
 	tableRows.sort(create_compare_by_attr('shape'))
-	/* for (var i = 0 ; i < tableRows.length;i++){
-		console.log(tableRows[i].shape)
-	} */
+	tableRows.sort(create_compare_by_attr('item'))
 	
 	//remove duplicate rows
 	tableRows = uniqRow(tableRows)
@@ -158,9 +147,11 @@ function createArray(x) {
 	var prop_counts = [0]
 	var value_counts = [0]
 	var shape_counts = [0]
+	var item_counts = [0]
 	last_value = tableRows[0].value
 	last_prop = tableRows[0].property
 	last_shape = tableRows[0].shape
+	last_item = tableRows[0].item
 	for (var i = 0 ; i < tableRows.length ; i++){
 		//Property
 		if (tableRows[i].property == last_prop) {
@@ -183,6 +174,13 @@ function createArray(x) {
 			shape_counts.push(1)
 			last_shape = tableRows[i].shape
 		}
+		//item
+		if (tableRows[i].item == last_item) {
+			item_counts[item_counts.length-1] += 1
+		} else {
+			item_counts.push(1)
+			last_item = tableRows[i].item
+		}
 	}
 	
 	
@@ -190,10 +188,18 @@ function createArray(x) {
 	var value_countdown = 0
 	var prop_countdown = 0
 	var shape_countdown = 0
+	var item_countdown = 0
 	for (var i = 0 ; i < tableRows.length; i++){
 		//add the item to the front of the row, with rowcount
-		var rowcount = tableRows.length * (i == 0);
-		tableRows[i].item = {text : x.node, rowcount : rowcount};
+		//var rowcount = tableRows.length * (i == 0);
+		// tableRows[i].item = {text : x.node, rowcount : rowcount};
+		if (item_countdown == 0) {
+			tableRows[i].item = {text : tableRows[i].item, rowcount : item_counts[0]};
+			item_countdown = item_counts.shift()-1
+		} else {
+			tableRows[i].item = {text : tableRows[i].item, rowcount : 0}
+			item_countdown -= 1
+		}
 		
 		//add the right rowcount for value
 		if (value_countdown == 0) {
@@ -245,23 +251,16 @@ function goThroughJSON(data) {
 			for (var i = 0 ; i < data.errors.length; i++) {
 				//recurse if there are more errors in the JSON object inside this one
 				addition = goThroughJSON(data.errors[i])
-				//this makes it so in the end regardless of the amount of recursion done the system has an array representing the table, 
-				//where each element is a dictionary representing a row
 				
 				//console.log(addition)
-				if (addition.constructor === objectConstructor) { //comparisaon based on https://stackoverflow.com/questions/11182924/how-to-check-if-javascript-object-is-json
-					//if the addition is already an Array of JSON objects, add it directly
-					output = output.concat(addition)
-				} else {
-					//otherwise, wrap it first
-					output = output.concat(addition)
-				}
+				output = output.concat(addition)
 				
 			}
 		}
 	} else if (data.errors instanceof Object){
 		//recurse if errors is a single JSON dict
 		output = goThroughJSON(data.errors)
+		
 	} else {
 		//if you reached the bottom of the error stack, create a row for this error
 		//if the item is still wrapped in an array (happens in some cases with data from wikidata) go through al items in that array
@@ -283,9 +282,15 @@ function goThroughJSON(data) {
 		if (!(Object.hasOwn(output[i], 'shape')) && Object.hasOwn(data, 'shape')){
 			output[i].shape = data.shape
 		}
+		//try to add new item information available at this height in the stack
+		if (Object.hasOwn(data, 'node') && typeof(data.node) === 'string'){
+			if (!(Object.hasOwn(output[i], 'item'))){
+				output[i].item = [data.node]
+			} else {
+				output[i].item.unshift(data.node)
+			}
+		}
 	}
-	
-	
 	return output
 }
 
@@ -350,7 +355,7 @@ function displayTable(dataArray){
 	//Takes an array of JSON objects, where each object represents a row. 
 	//Displays this as a table with columns item, shape, property, value,  issue type, triple link, full error message
 	//All row HTML elements have an id of [item_ID]_[row_nr]
-	var item_link_split = dataArray[0].item.text.split("/")
+	var item_link_split = dataArray[0].item.text[0].split("/")
 	var item_ID = item_link_split[item_link_split.length - 1]
 	var row_nr = 0
 	
@@ -400,17 +405,37 @@ function addCell(cellJSON, row_ID, bg_colour){
 		if (cellJSON.rowcount != 0) {
 			var p = document.getElementById(row_ID);
 			var newElement = document.createElement('td');
-			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'"
+			if (cellJSON.text instanceof Array){
+				// if the text consists of multiple elements, print each after another when creating innterHTML
+				if (cellJSON.text.length != cellJSON.link.length) {
+					console.log("Error: wrong number of links vs text")
+					console.log(cellJSON)
+				}
+				first = true
+				innerHTML = "<floattext>"
+				for (i=0;i<cellJSON.text.length;i++){
+					if (!first){
+						innerHTML = innerHTML+"=> "
+					}
+					first = false
+					innerHTML = innerHTML+"<a href=" + cellJSON.link[i] + ">" + cellJSON.text[i] + "</a> =>"
+				}
+				innerHTML = innerHTML + "</floattext>"
+				newElement.innerHTML = innerHTML
+			} else {
+				if (cellJSON.link) {
+					newElement.innerHTML = "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>";
+				} else {
+					newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
+				}
+				
+			}
+			
+			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'" + newElement.innerHTML
 			
 			newElement.setAttribute('class', "highcell");
 			newElement.setAttribute('rowspan', cellJSON.rowcount);
-			if (cellJSON.link) {
-				output = output + "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>"
-				newElement.innerHTML = "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>";
-			} else {
-				output = output + "<floattext>" + cellJSON.text + "</floattext>"
-				newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
-			}
+			
 			
 			//recolour to desired colour
 			newElement.setAttribute("style", "background-color:"+bg_colour)
@@ -421,6 +446,7 @@ function addCell(cellJSON, row_ID, bg_colour){
 		var newElement = document.createElement('td');
 		var output = "<floattext>" + cellJSON + "</floattext>"
 		newElement.innerHTML = "<floattext>" + cellJSON + "</floattext>";
+		newElement.setAttribute("style", "background-color:"+bg_colour)
 		p.appendChild(newElement)
 	}
 	
@@ -443,11 +469,36 @@ function addMarkupData(dataArray, markupArray) {
 			dataArray[i].shape.text = splitarry[splitarry.length-1]
 		}
 		//Item
-		//TODO: check MarkupArray for correct text
+		//item is now a list
 		if (dataArray[i].item instanceof Object && dataArray[i].item.text){
-			dataArray[i].item.link = dataArray[i].item.text
+			//check if item.text is an array 
+			if (dataArray[i].item.text instanceof Array){
+				//check if there is no link yet, if there is note problem
+				if (dataArray[i].item.link){
+					console.log("unexpected item link before assignment:" + dataArray[i].item)
+				}
+				dataArray[i].item.link = []
+				for (var j=0;j<dataArray[i].item.text.length;j++){
+					dataArray[i].item.link.push(dataArray[i].item.text[j])
+					var splitarry = dataArray[i].item.text[j].split('/')
+					dataArray[i].item.text[j] = splitarry[splitarry.length-1]//if no match found, fail semi-gracefully by showing the ID instead of the entire link
+					//dataArray[i].item.text[j] = markupArray.results.bindings[0].item.value //for testing: if nothing is found, give the name of the "main" item
+
+					for (var k=0;k<markupArray.results.bindings.length; k++){
+						//check if the link matches any links to values in our item
+						query_ID = markupArray.results.bindings[k].simplevalue.value.split('/')[markupArray.results.bindings[k].simplevalue.value.split('/').length-1]
+						if (dataArray[i].item.text[j] == query_ID){
+							dataArray[i].item.text[j] = markupArray.results.bindings[k].simplevalueLabel.value
+						}
+					}
+				}
+			} else {
+				console.log("item of unexpected shape:" + dataArray[i].item)
+			}
+			
+			//dataArray[i].item.link = dataArray[i].item.text
 			//var splitarry = dataArray[i].item.text.split('/')
-			dataArray[i].item.text = markupArray.results.bindings[0].item.value//splitarry[splitarry.length-1]
+			//dataArray[i].item.text = markupArray.results.bindings[0].item.value//splitarry[splitarry.length-1]
 		}
 		//Property
 		//TODO: check MarkupArray for correct text
