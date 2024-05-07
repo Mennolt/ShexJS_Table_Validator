@@ -175,7 +175,14 @@ function createArray(x) {
 			last_shape = tableRows[i].shape
 		}
 		//item
-		if (tableRows[i].item == last_item) {
+		//note: more complex to deal with arrays
+		change = false
+		for (var j=0;j<tableRows[i].item.length;j++){
+			if (tableRows[i].item[j] != last_item[j]){
+				change=true
+			}
+		}
+		if (!change) {
 			item_counts[item_counts.length-1] += 1
 		} else {
 			item_counts.push(1)
