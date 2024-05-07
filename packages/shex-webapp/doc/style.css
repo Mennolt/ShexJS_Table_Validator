@@ -50,7 +50,7 @@ th{
 floattext{
 	position:sticky;
 	vertical-align:top;
-	top:60;
+	top:30px;
 	word-wrap:break-word;
 	white-space:normal;
 }
