@@ -94,7 +94,7 @@ WHERE
 					},
 					mode:'cors'
 			}).then(response => response.json()).then(querydata => {
-				var markedUpArry = addMarkupData(arry, querydata)
+				var markedUpArry = addMarkupData(arry, querydata, data[i].node)
 				
 				output = output + displayTable(markedUpArry)
 				
@@ -283,11 +283,15 @@ function goThroughJSON(data) {
 			output[i].shape = data.shape
 		}
 		//try to add new item information available at this height in the stack
+		
 		if (Object.hasOwn(data, 'node') && typeof(data.node) === 'string'){
-			if (!(Object.hasOwn(output[i], 'item'))){
-				output[i].item = [data.node]
-			} else {
-				output[i].item.unshift(data.node)
+			splitted = data.node.split("/")
+			if (!(splitted[splitted.length-2] == "statement")){ //don't allow addition of statement nodes
+				if (!(Object.hasOwn(output[i], 'item'))){
+					output[i].item = [data.node]
+				} else {
+					output[i].item.unshift(data.node)
+				}
 			}
 		}
 	}
@@ -415,10 +419,10 @@ function addCell(cellJSON, row_ID, bg_colour){
 				innerHTML = "<floattext>"
 				for (i=0;i<cellJSON.text.length;i++){
 					if (!first){
-						innerHTML = innerHTML+"=> "
+						innerHTML = innerHTML+" => "
 					}
 					first = false
-					innerHTML = innerHTML+"<a href=" + cellJSON.link[i] + ">" + cellJSON.text[i] + "</a> =>"
+					innerHTML = innerHTML+"<a href=" + cellJSON.link[i] + ">" + cellJSON.text[i] + "</a>"
 				}
 				innerHTML = innerHTML + "</floattext>"
 				newElement.innerHTML = innerHTML
@@ -454,9 +458,10 @@ function addCell(cellJSON, row_ID, bg_colour){
 	return output
 }
 
-function addMarkupData(dataArray, markupArray) {
+function addMarkupData(dataArray, markupArray, node) {
 	//goes through dataArray. For each item property and value tries to add markup information using the markupArray
 	//also cuts shape text prefix
+	//uses node to check for the original item
 	
 	for (var i=0; i<dataArray.length;i++){
 		//shape
@@ -469,7 +474,6 @@ function addMarkupData(dataArray, markupArray) {
 			dataArray[i].shape.text = splitarry[splitarry.length-1]
 		}
 		//Item
-		//item is now a list
 		if (dataArray[i].item instanceof Object && dataArray[i].item.text){
 			//check if item.text is an array 
 			if (dataArray[i].item.text instanceof Array){
@@ -479,16 +483,22 @@ function addMarkupData(dataArray, markupArray) {
 				}
 				dataArray[i].item.link = []
 				for (var j=0;j<dataArray[i].item.text.length;j++){
+					//add each link as a link
 					dataArray[i].item.link.push(dataArray[i].item.text[j])
-					var splitarry = dataArray[i].item.text[j].split('/')
-					dataArray[i].item.text[j] = splitarry[splitarry.length-1]//if no match found, fail semi-gracefully by showing the ID instead of the entire link
-					//dataArray[i].item.text[j] = markupArray.results.bindings[0].item.value //for testing: if nothing is found, give the name of the "main" item
-
-					for (var k=0;k<markupArray.results.bindings.length; k++){
-						//check if the link matches any links to values in our item
-						query_ID = markupArray.results.bindings[k].simplevalue.value.split('/')[markupArray.results.bindings[k].simplevalue.value.split('/').length-1]
-						if (dataArray[i].item.text[j] == query_ID){
-							dataArray[i].item.text[j] = markupArray.results.bindings[k].simplevalueLabel.value
+					//check if this is the original item, if so skip next steps
+					if (dataArray[i].item.text[j] == node){
+						dataArray[i].item.text[j] = markupArray.results.bindings[0].item.value
+					} else {
+					
+						var splitarry = dataArray[i].item.text[j].split('/')
+						dataArray[i].item.text[j] = splitarry[splitarry.length-1]//if no match found, fail semi-gracefully by showing the ID instead of the entire link
+						
+						for (var k=0;k<markupArray.results.bindings.length; k++){
+							//check if the link matches any links to values in our item
+							query_ID = markupArray.results.bindings[k].simplevalue.value.split('/')[markupArray.results.bindings[k].simplevalue.value.split('/').length-1]
+							if (dataArray[i].item.text[j] == query_ID){
+								dataArray[i].item.text[j] = markupArray.results.bindings[k].simplevalueLabel.value
+							}
 						}
 					}
 				}
