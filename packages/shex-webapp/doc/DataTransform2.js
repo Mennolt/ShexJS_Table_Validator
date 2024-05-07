@@ -100,12 +100,12 @@ WHERE
 				
 			})
 
-	 	addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
-		addElement('results', 'div', 'test', JSON.stringify(arry)) ;
-		addElement('results', 'div', 'test', '<br>')
-		addElement('results', 'div', 'test', JSON.stringify(data[i]))
-		addElement('results', 'div', 'test', '<br>')
-		addElement('results', 'div', 'test', '<br>')  
+	 	// addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
+		// addElement('results', 'div', 'test', JSON.stringify(arry)) ;
+		// addElement('results', 'div', 'test', '<br>')
+		// addElement('results', 'div', 'test', JSON.stringify(data[i]))
+		// addElement('results', 'div', 'test', '<br>')
+		// addElement('results', 'div', 'test', '<br>')  
 	
 	
 	}
