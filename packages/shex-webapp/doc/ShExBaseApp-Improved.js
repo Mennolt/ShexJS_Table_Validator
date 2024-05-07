@@ -1541,18 +1541,9 @@ class ShExResultsRenderer {
           return acc
         }, {});
 	  case "table"://new method added in this version
-		//print the table, try to copy the human case as much as possible
-		elt = []
-		// elt = $("<div class='human'/>").append(
-			// $("<span/>").text(
-			// `${ldToTurtle(entry.node, this.caches.inputData.meta.termToLex)}@${fails ? "!" : ""}${this.caches.inputSchema.meta.termToLex(entry.shape)}`
-		// )).addClass(klass);//check what ^ does, if it needs to be replaced
-		
+		//print the table rows associated with this entry
 		if(fails || $("#show-conformant").val()=="on"){
-			//console.log(entry)
 			renderOutput([entry])//.then(output => console.log(output))
-			//elt.append($("<pre>").text(renderOutput([entry])))
-			//console.log(elt);
 		}
 		break;
         // falling through to default covers the appinfo case
@@ -1560,6 +1551,12 @@ class ShExResultsRenderer {
         elt = $("<pre/>").text(JSON.stringify(renderMe, null, "  ")).addClass(klass);
       }
     }
+	
+	//in case of table mode, don't execute next bits of code
+	if ($("#interface").val() == "table"){
+		return
+	}
+	
     this.resultsWidget.append(elt);
 
     // update the FixedMap
