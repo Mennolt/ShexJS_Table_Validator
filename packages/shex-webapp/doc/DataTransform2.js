@@ -343,8 +343,8 @@ function createArrayRow(item) {
 		output.property = null
 		output.value = null
 	}
-	console.log(item)
-	console.log(output)
+	//console.log(item)
+	//console.log(output)
 	return output
 }
 
