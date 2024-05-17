@@ -27,7 +27,11 @@
   "engines": {
     "node": ">=0.10.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@shexjs/term": "^1.0.0-alpha.25",
+    "clipboard": "^2.0.11",
+    "shex": "^1.0.0-alpha.26"
+  },
   "devDependencies": {
     "@shexjs/cli": "file:packages/shex-cli",
     "@shexjs/core": "file:packages/shex-core",
@@ -157,9 +161,5 @@
       "lcov",
       "text"
     ]
-  },
-  "dependencies": {
-    "@shexjs/term": "^1.0.0-alpha.25",
-    "shex": "^1.0.0-alpha.26"
   }
 }
