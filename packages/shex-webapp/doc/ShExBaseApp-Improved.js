@@ -1693,6 +1693,9 @@ class ShExBaseApp {
     $("#regexpEngine").on("change", this.toggleControls.bind(this));
     $("#validate").on("click", this.disableResultsAndValidate.bind(this));
     $("#download-results-button").on("click", this.downloadResults.bind(this));
+	//for table mode
+	$('#export-table').on("click", exportTable);
+	 $("#validate").on("click", revealTable);
 
     $("#loadForm").dialog({
       autoOpen: false,

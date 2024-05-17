@@ -22,7 +22,8 @@ function revealTable() {
 	}
 }
 
-async function exportTable(table_id){
+async function exportTable(event){
+	var table_id = "table-mode-results"
 	console.log(table_id)
 	//step 0: get a clone of the Node
 	var mynode = document.getElementById(table_id).cloneNode(true)
@@ -34,10 +35,25 @@ async function exportTable(table_id){
 	mynode = prepHTMLforExport(mynode)
 	
 	//step 2: do the actual copying
-	const type = "text/plain";
-	const blob = new Blob([mynode.outerHTML], { type });
-	const data = [new ClipboardItem({ [type]: blob })];
-	await navigator.clipboard.write(data);
+	//for chrome:
+	try {
+		const type = "text/plain";
+		const blob = new Blob([mynode.outerHTML], { type });
+		const data = [new ClipboardItem({ [type]: blob })];
+		await navigator.clipboard.write(data);
+	} catch (error) {
+		// thanks to https://stackoverflow.com/questions/33855641/copy-output-of-a-javascript-variable-to-the-clipboard
+		console.log("using secondary copy mechanism in exportTable due to error")
+		console.log("error")
+		var dummy = document.createElement("input");
+		document.body.appendChild(dummy);
+		dummy.setAttribute("id", "dummy_id");
+		document.getElementById("dummy_id").value = mynode.outerHTML
+		//dummy.value = mynode
+		dummy.select();
+		document.execCommand("copy");
+		document.body.removeChild(dummy);
+	}
 }
 
 function prepHTMLforExport(element){
@@ -64,7 +80,8 @@ function prepHTMLforExport(element){
 		return newchildren
 	} else if (element.tagName=="A"){
 		//replace hyperlink tags
-		//with a node with 3 kids: 
+		//with a node with 3 kids: two text nodes with the required bits to make a wikidata link, and with current children
+		//TODO: use proper internal links rather than external ones, where possible (requires seeing what kind of link it is
 		return [document.createTextNode("["+element.href+" "), ...newchildren, document.createTextNode("]")]
 	}else {
 		//else add children to self and return self
