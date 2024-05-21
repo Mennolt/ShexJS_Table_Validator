@@ -366,6 +366,9 @@ function displayTable(dataArray){
 	//Takes an array of JSON objects, where each object represents a row. 
 	//Displays this as a table with columns item, shape, property, value,  issue type, triple link, full error message
 	//All row HTML elements have an id of [item_ID]_[row_nr]
+	
+	//console.log(dataArray)
+	
 	var item_link_split = dataArray[0].item.text[0].split("/")
 	var item_ID = item_link_split[item_link_split.length - 1]
 	var row_nr = 0
@@ -382,6 +385,13 @@ function displayTable(dataArray){
 
 function addRow(rowJSON, row_ID) {
 	//console.log(rowJSON)
+	//to prevent duplicate rows, remove a row with the same id
+	//TODO: make the IDs into the Qids to they are truly  unique
+	const element = document.getElementById(row_ID);
+	if (element instanceof HTMLElement) {
+		element.remove()
+	}		
+	
 	//adds a single row to the table
 	//add row element to child cells to:
 	var output = "<tr id="+row_ID+">"
@@ -539,8 +549,12 @@ function addMarkupData(dataArray, markupArray, node) {
 		//Value
 		var working_vj_list = []
 		if (dataArray[i].value instanceof Object && dataArray[i].value.text){
-			dataArray[i].value.link = dataArray[i].value.text
+			//add a link, if the value has / in it
 			var splitarry = dataArray[i].value.text.split('/')
+			if (splitarry.length>1){
+				dataArray[i].value.link = dataArray[i].value.text
+			}
+			
 			dataArray[i].value.text = splitarry[splitarry.length-1] //if no match found, fail semi-gracefully by showing the ID instead of the entire link
 			
 			for (var j=0; j<markupArray.results.bindings.length;j++){

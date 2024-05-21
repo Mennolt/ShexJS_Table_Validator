@@ -56,17 +56,25 @@ async function exportTable(event){
 	}
 }
 
-function prepHTMLforExport(element){
+function prepHTMLforExport(element, top_level = true, in_th = false){
 	//recursively goes into an HTML element, preparing it for export by:
 	//removing thead and tbody statements but leaving their contents in the parent element
 	//removing floattext tags, to be replaced with a ... in child/parent element
 	//replacing hyperlink a tags with [<link> <text>]
 	
+	//two flags are used, one to indicate that final code needs to be processed, and one to indicate you are in the table head, used to add the extra column
+	
+	//checking flags
+	if (element.tagName == "THEAD"){
+		in_th = true
+	}
+	
+	
 	//go through child elements and prep each for export
 	var newchildren = []
 	var children = element.childNodes
 	for (var i=0;i<children.length;i++){
-		var newkid = prepHTMLforExport(children[i])
+		var newkid = prepHTMLforExport(children[i], false, in_th)
 		
 		//if the new kid is actually a list, concat the lists
 		if (newkid instanceof Array){
@@ -83,7 +91,21 @@ function prepHTMLforExport(element){
 		//with a node with 3 kids: two text nodes with the required bits to make a wikidata link, and with current children
 		//TODO: use proper internal links rather than external ones, where possible (requires seeing what kind of link it is
 		return [document.createTextNode("["+element.href+" "), ...newchildren, document.createTextNode("]")]
-	}else {
+	} else if (element.tagName=="TR") {
+		//this feature is waiting for further wikidata feedback
+		if (in_th) {
+			//construct a new cell with the right Text
+			
+			//add and return that
+			newchildren.push(extra_col)
+		} else {
+			//construct a new cell with text "not checked" or somethign similar
+		}
+		if (newchildren.length > 0) {
+			element.replaceChildren(...newchildren)
+		}
+		return element
+	} else {
 		//else add children to self and return self
 		if (newchildren.length > 0) {
 			element.replaceChildren(...newchildren)
