@@ -95,11 +95,18 @@ function prepHTMLforExport(element, top_level = true, in_th = false){
 		//this feature is waiting for further wikidata feedback
 		if (in_th) {
 			//construct a new cell with the right Text
+			extra_col = document.createElement("th")
+			extra_col.innerHTML = "Inspection done"
 			
 			//add and return that
 			newchildren.push(extra_col)
 		} else {
 			//construct a new cell with text "not checked" or somethign similar
+			extra_col = document.createElement("td")
+			extra_col.innerHTML = "No"
+			
+			//add and return that
+			newchildren.push(extra_col)
 		}
 		if (newchildren.length > 0) {
 			element.replaceChildren(...newchildren)
