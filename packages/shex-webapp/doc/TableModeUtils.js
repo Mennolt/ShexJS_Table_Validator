@@ -14,8 +14,8 @@ function tableSelectCheck(selector) {
 function revealTable() {
 	//if currently in table mode, shows the table results div
 	if($("#interface").val()=="table") {
-		document.getElementById("table-mode-results").style.display = "block";
-		document.getElementById("export-table").style.display = "block";
+		document.getElementById("table-mode-results").style.display = "";
+		document.getElementById("export-table").style.display = "";
 	} else {
 		document.getElementById("table-mode-results").style.display = "none";
 		document.getElementById("export-table").style.display = "none";

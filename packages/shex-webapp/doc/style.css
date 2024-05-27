@@ -22,7 +22,6 @@ table{
 	text-align:left;
 }
 .results{
-	display:block;
 	min-width:600px;
 	max-width:1400px;
 }
