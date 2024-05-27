@@ -1909,7 +1909,7 @@ class ShExBaseApp {
         ("schema" in iface &&
          iface.schema.reduce((r, elt) => { return r+elt.length; }, 0))
         && shapeMapErrors.length === 0) {
-      return callValidator();
+      return this.callValidator();
     }
 
     if ("output-map" in iface)
