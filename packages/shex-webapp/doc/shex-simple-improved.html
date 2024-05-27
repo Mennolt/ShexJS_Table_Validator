@@ -208,7 +208,7 @@ ul {
     </style>
 
     <link href="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.css" rel="stylesheet" type="text/css" />
-    <script src="./jquery.min.js"></script>
+    <!-- <script src="./jquery.min.js"></script> --> <!--not loading this because it gives an error anyways and it doesn;t seem to affect anything-->
     <script>
       // Load worker early.
       var ShExWorker = new Worker("shex-simple-worker.js");
@@ -389,6 +389,9 @@ ul {
     <div id="results">
 	<!-- this table is a placeholder for results in table mode -->
 		<table class="results" id="table-mode-results" style="display:none">
+			<caption style="word-wrap:break-word; text-align:left; font-weight:normal;">Each row in this table is a potential problem. However the validation process suggests many different possible solutions. <br/>
+			For example it might suggest a property either has a missing value, and the existing value is of a type not allowed according to the schema, in two rows beneath each other.<br/>
+			In that case changing the existing value to be valid will also remove the option to add a new correct value here.</caption>
 			<thead id="table_head">
 				<tr class="headerrow" id='headerrow'>
 				</tr>
@@ -451,7 +454,12 @@ ul {
     <script src="./iri.js"></script>
     <script src="./ShExBaseApp-Improved.js"></script>
     <script src="./ShExApp.js"></script>
+	<!-- for workers-->
+	<script src="./ShExInWorkerApp.js"></script>
+    <script src="./RemoteShExValidator.js"></script>
+    <script src="./WorkerMarshalling.js"></script>
     <script src="../doc/ShExRSchema.js"></script>
+	<!-- for table mode -->
 	<script src="./DataTransform2.js"></script>
 	<script src="./TableModeUtils.js"></script>
     <script>new ShExApp(DefaultBase).start();</script>
