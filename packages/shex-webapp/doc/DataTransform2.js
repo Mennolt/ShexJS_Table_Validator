@@ -313,12 +313,10 @@ function createArrayRow(item) {
 	var output = {}
 	if (item.type == "MissingProperty") {
 		output.property =  item.property;
-		output.value = null; 
 		output.error_type = item.type
 	} else if (item.type == "NodeConstraintViolation"){
 		output.error_type = item.type
 		output.value = item.node.value
-		output.property = null
 		output.error_fulltext = item.errors[0]
 	} else if (item.type == "ExcessTripleViolation") {
 		output.error_type = item.type
@@ -340,8 +338,6 @@ function createArrayRow(item) {
 	}else {
 		output.error_type = item.type
 		output.error_fulltext = item
-		output.property = null
-		output.value = null
 	}
 	//console.log(item)
 	//console.log(output)
@@ -421,7 +417,7 @@ function addCell(cellJSON, row_ID, bg_colour){
 	
 	
 	
-	if (cellJSON instanceof Object){ //what to do for complex input
+	if (cellJSON instanceof Object ){ //what to do for complex input
 		//don't create elements for things not to be displayed
 		if (cellJSON.rowcount != 0) {
 			var p = document.getElementById(row_ID);
@@ -439,17 +435,20 @@ function addCell(cellJSON, row_ID, bg_colour){
 						innerHTML = innerHTML+" => "
 					}
 					first = false
-					innerHTML = innerHTML+"<a href=" + cellJSON.link[i] + ">" + cellJSON.text[i] + "</a>"
+					innerHTML = innerHTML + addLink(cellJSON.text[i], cellJSON.link[i])
 				}
 				innerHTML = innerHTML + "</floattext>"
 				newElement.innerHTML = innerHTML
+			} else if (cellJSON.text === undefined) {
+				//if there is no text, print an empty cell
+				var p = document.getElementById(row_ID);
+				var newElement = document.createElement('td');
+				//recolour to desired colour
+				newElement.setAttribute("style", "background-color:"+bg_colour)
+				newElement.setAttribute('rowspan', cellJSON.rowcount);
+				p.appendChild(newElement)
 			} else {
-				if (cellJSON.link) {
-					newElement.innerHTML = "<floattext><a href=" + cellJSON.link + ">" + cellJSON.text + "</a></floattext>";
-				} else {
-					newElement.innerHTML = "<floattext>" + cellJSON.text + "</floattext>";
-				}
-				
+				newElement.innerHTML = addLink(cellJSON.text, cellJSON.link)
 			}
 			
 			var output = "<td class='highcell' rowspan='" + cellJSON.rowcount + "'" + newElement.innerHTML
@@ -462,6 +461,12 @@ function addCell(cellJSON, row_ID, bg_colour){
 			newElement.setAttribute("style", "background-color:"+bg_colour)
 			p.appendChild(newElement)
 		}
+	} else if (cellJSON === undefined) {
+		var p = document.getElementById(row_ID)
+		var newElement = document.createElement("td");
+		newElement.setAttribute("style", "background-color:"+bg_colour)
+		p.appendChild(newElement)
+		var output = "<td></td>"
 	} else { //what to do for simple cells
 		var p = document.getElementById(row_ID);
 		var newElement = document.createElement('td');
@@ -473,6 +478,24 @@ function addCell(cellJSON, row_ID, bg_colour){
 	
 	
 	return output
+}
+
+function addLink(text, link){
+	//given a link and bit of text, wraps that in a tag and if needed adds small subtext
+	output = ""
+	output_end = ""
+	
+	if (link){
+		output = output + "<a href=" + link + ">"
+		output_end = output_end + "</a>"
+		if (getLinkID(link) != text){
+			output_end =  "<small>(" + getLinkID(link) + ")</small>" + output_end
+		}
+	}
+	
+	output = output + text
+	
+	return output + output_end
 }
 
 function addMarkupData(dataArray, markupArray, node) {
@@ -487,8 +510,7 @@ function addMarkupData(dataArray, markupArray, node) {
 			//then get only the identifying part
 			//add link as link (note: this means if user clicks it it tries to download schema text instead of going to schema page)
 			dataArray[i].shape.link = dataArray[i].shape.text
-			var splitarry = dataArray[i].shape.text.split('/')
-			dataArray[i].shape.text = splitarry[splitarry.length-1]
+			dataArray[i].shape.text = getLinkID(dataArray[i].shape.text)
 		}
 		//Item
 		if (dataArray[i].item instanceof Object && dataArray[i].item.text){
@@ -506,13 +528,11 @@ function addMarkupData(dataArray, markupArray, node) {
 					if (dataArray[i].item.text[j] == node){
 						dataArray[i].item.text[j] = markupArray.results.bindings[0].item.value
 					} else {
-					
-						var splitarry = dataArray[i].item.text[j].split('/')
-						dataArray[i].item.text[j] = splitarry[splitarry.length-1]//if no match found, fail semi-gracefully by showing the ID instead of the entire link
+						dataArray[i].item.text[j] = getLinkID(dataArray[i].item.text[j])//if no match found, fail semi-gracefully by showing the ID instead of the entire link
 						
 						for (var k=0;k<markupArray.results.bindings.length; k++){
 							//check if the link matches any links to values in our item
-							query_ID = markupArray.results.bindings[k].simplevalue.value.split('/')[markupArray.results.bindings[k].simplevalue.value.split('/').length-1]
+							query_ID = getLinkID(markupArray.results.bindings[k].simplevalue.value)
 							if (dataArray[i].item.text[j] == query_ID){
 								dataArray[i].item.text[j] = markupArray.results.bindings[k].simplevalueLabel.value
 							}
@@ -522,23 +542,17 @@ function addMarkupData(dataArray, markupArray, node) {
 			} else {
 				console.log("item of unexpected shape:" + dataArray[i].item)
 			}
-			
-			//dataArray[i].item.link = dataArray[i].item.text
-			//var splitarry = dataArray[i].item.text.split('/')
-			//dataArray[i].item.text = markupArray.results.bindings[0].item.value//splitarry[splitarry.length-1]
 		}
 		//Property
-		//TODO: check MarkupArray for correct text
 		var working_pj_list = []
 		if (dataArray[i].property instanceof Object && dataArray[i].property.text){ 
 			dataArray[i].property.link = dataArray[i].property.text
-			var splitarry = dataArray[i].property.text.split('/')
-			dataArray[i].property.text = splitarry[splitarry.length-1] //if no match found, fail semi-gracefully by showing the ID instead of the entire link
-
-			pID = dataArray[i].property.link.split('/')[dataArray[i].property.link.split('/').length-1]
+			pID = getLinkID(dataArray[i].property.text)
+			dataArray[i].property.text = pID //if no match found, fail semi-gracefully by showing the ID instead of the entire link
+			
 			for (var j=0; j<markupArray.results.bindings.length; j++){
 				//check whether link (.property.link) matches markuparray.results.bindings[j].p_property.value
-				query_pID = markupArray.results.bindings[j].p_property.value.split('/')[markupArray.results.bindings[j].p_property.value.split('/').length-1]
+				query_pID = getLinkID(markupArray.results.bindings[j].p_property.value)
 				if (pID == query_pID){
 					dataArray[i].property.text = markupArray.results.bindings[j].p_propertyLabel.value
 					working_pj_list.push(j)
@@ -550,15 +564,15 @@ function addMarkupData(dataArray, markupArray, node) {
 		var working_vj_list = []
 		if (dataArray[i].value instanceof Object && dataArray[i].value.text){
 			//add a link, if the value has / in it
-			var splitarry = dataArray[i].value.text.split('/')
+			var splitarry = dataArray[i].value.text.split("/")
 			if (splitarry.length>1){
 				dataArray[i].value.link = dataArray[i].value.text
 			}
 			
-			dataArray[i].value.text = splitarry[splitarry.length-1] //if no match found, fail semi-gracefully by showing the ID instead of the entire link
+			dataArray[i].value.text = getLinkID(dataArray[i].value.text) //if no match found, fail semi-gracefully by showing the ID instead of the entire link
 			
 			for (var j=0; j<markupArray.results.bindings.length;j++){
-				query_pID = markupArray.results.bindings[j].simplevalue.value.split('/')[markupArray.results.bindings[j].simplevalue.value.split('/').length-1]
+				query_pID = getLinkID(markupArray.results.bindings[j].simplevalue.value)
 				if (dataArray[i].value.text == query_pID){
 					dataArray[i].value.text = markupArray.results.bindings[j].simplevalueLabel.value
 					working_vj_list.push(j)
@@ -567,7 +581,7 @@ function addMarkupData(dataArray, markupArray, node) {
 		}
 		
 		//if something was found for both property and value, find the associated statement Link
-		dataArray[i].triple_link = null //fail gracefully if no triple link involved
+		dataArray[i].triple_link = undefined //fail gracefully if no triple link involved
 		for (j=0; j<working_pj_list.length;j++){
 			for (k=0; k<working_vj_list.length;k++){
 				if (j==k){
@@ -578,6 +592,15 @@ function addMarkupData(dataArray, markupArray, node) {
 		}
 	}
 	return dataArray
+}
+
+function getLinkID(link_str){
+	//Gets the last part of a given link
+	//which given a Wikidata link will be the ID
+	var splitarray = link_str.split("/")
+	var potential_id = splitarray[splitarray.length-1]
+	
+	return potential_id
 }
 
 //adapted from https://stackoverflow.com/questions/9229645/remove-duplicate-values-from-js-array	
