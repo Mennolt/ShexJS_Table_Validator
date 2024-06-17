@@ -486,7 +486,7 @@ function addLink(text, link){
 	output_end = ""
 	
 	if (link){
-		output = output + "<a href=" + link + ">"
+		output = output + "<a href=" + link + " target='_blank'>"
 		output_end = output_end + "</a>"
 		if (getLinkID(link) != text){
 			output_end =  "<small>(" + getLinkID(link) + ")</small>" + output_end
