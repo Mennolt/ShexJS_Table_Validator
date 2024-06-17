@@ -216,6 +216,9 @@ ul {
     <script src="https://www.w3.org/scripts/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.js" type="text/javascript"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	
+	<!--this helps the application fit the screen width on different devices-->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
   </head>
 
   <body xmlns:xlink="http://www.w3.org/1999/xlink">
@@ -384,6 +387,17 @@ ul {
         </div>
         <div style="clear:both; padding-top: .5em;"/>
             <button id="validate" >validate (ctl-enter)</button>
+			<!--text instructing how to use the validator-->
+			<p style="max-width:100%;white-space:pre-line;" class="wrap">
+			How to use the Tabular Online Validator:
+			The top left field (purple) should contain your schema. It might already be filled out, if not add it there. 
+			The top right field (green) should contain the SPARQL endpoint where you can get your data. For Wikidata this is "<i>Endpoint: https://query.wikidata.org/sparql</i>". For Wikibase Cloud instances it looks like "<i>Endpoint: https://your_instance_name.wikibase.cloud/query/sparql</i>"
+			In the white field to the left enter the SPARQL query. It should be encased in these two strings: "<code>SPARQL'''</code>" and "<code>'''@START</code>".
+			If you are not using Wikidata, enter the SPARQL query endpoint, as well as the url to your general database in the fields below the query field. 
+			
+			Then press the validate button to have the items you are querying for validated against the schema entered.
+			
+			</p>
       </div>
     </div>
     <div id="results">
