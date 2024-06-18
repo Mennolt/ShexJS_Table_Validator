@@ -395,7 +395,7 @@ ul {
 			In the white field to the left enter the SPARQL query. It should be encased in these two strings: "<code>SPARQL'''</code>" and "<code>'''@START</code>".
 			If you are not using Wikidata, enter the SPARQL query endpoint, as well as the url to your general database in the fields below the query field. 
 			
-			Then press the validate button to have the items you are querying for validated against the schema entered.
+			Then press the validate button to have the items you are querying for validated against the schema entered. After some time the table of results appears below. For users who prefer the old, text only output, use the controls button above to change the style to "human".
 			
 			</p>
       </div>
@@ -403,9 +403,15 @@ ul {
     <div id="results">
 	<!-- this table is a placeholder for results in table mode -->
 		<table class="results" id="table-mode-results" style="display:none">
-			<caption style="word-wrap:break-word; text-align:left; font-weight:normal;">Each row in this table is a potential problem. However the validation process suggests many different possible solutions. <br/>
-			For example it might suggest a property either has a missing value, and the existing value is of a type not allowed according to the schema, in two rows beneath each other.<br/>
-			In that case changing the existing value to be valid will also remove the option to add a new correct value here.</caption>
+			<caption style="white-space:pre-line;word-wrap:break-word; text-align:left; font-weight:normal;">Each row in this table is a potential problem. However the validation process suggests many different possible solutions. 
+			For example it might suggest a property either has a missing value, and the existing value is of a type not allowed according to the schema, in two rows beneath each other.
+			In that case changing the existing value to be valid will also remove the option to add a new correct value here.
+			
+			Main problem types are:
+			<ul>
+			<li> Missing property: a triple with the specified property doesn't exist.</li>
+			<li> NodeConstraintViolation: a triple has a value that isn't allowed for that property.</li>
+			<li> ExcessTripleViolation: there are more triples using a specific property than allowed by the shape.</li></ul> </caption>
 			<thead id="table_head">
 				<tr class="headerrow" id='headerrow'>
 				</tr>

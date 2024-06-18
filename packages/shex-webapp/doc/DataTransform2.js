@@ -325,14 +325,17 @@ function createArrayRow(item) {
 		output.value = item.triple.object.value
 	} else if (item.type == "TypeMismatch") {
 		output.error_type = item.type
+		output.error_fulltext = item
 		console.log(item)
 		console.log('type mismatch detected! Implement to continue')
 	} else if (item.type == 'SemActFailure') {
 		output.error_type = item.type
+		output.error_fulltext = item
 		console.log(item)
 		console.log('Semaphote Act Failure detected! Implement to continue')
 	} else if (item.type == 'ClosedShapeViolation') {
 		output.error_type = item.type
+		output.error_fulltext = item
 		console.log(item)
 		console.log('Closed Shape Violation detected! Implement to continue')
 	}else {
