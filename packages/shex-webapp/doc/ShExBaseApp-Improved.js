@@ -1375,27 +1375,7 @@ class DirectShExValidator {
     });
     this.renderer = renderer;
 	//if in table mode, initialize the table headers and delete any bits of table already existing
-	var headerrow = document.getElementById("headerrow")
-	headerrow.replaceChildren()
-	var tbody = document.getElementById('table_body')
-	tbody.replaceChildren()
-	
-	
-	if ($("#interface").val() == "table"){
-		var headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
-		var widths = [-1,-1,-1,-1,150,100,-1]
-		for (var i = 0 ; i < headers.length; i++) {
-			//output = output + "<th>" + headers[i] + "</th>"
-			var p = document.getElementById('headerrow');
-			var newElement = document.createElement('th');
-			newElement.setAttribute('id', "");
-			if (widths[i] != -1){
-				newElement.setAttribute('style', "width:" + widths[i] + "px")
-			}
-			newElement.innerHTML = headers[i];
-			p.appendChild(newElement);
-			//addElement('header_row', 'th', "", headers[i])
-	}
+	tableReset()
 	}
   }
   async invoke (fixedMap, validationTracker, time, _done, _currentAction) {

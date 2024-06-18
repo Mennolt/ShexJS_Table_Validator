@@ -121,5 +121,31 @@ function prepHTMLforExport(element, top_level = true, in_th = false){
 	}
 }
 
-
+function tableReset(){
+	//resets table element to be filled by a new validation run
+	
+	//delete any table bits that currently exist
+	var headerrow = document.getElementById("headerrow")
+	headerrow.replaceChildren()
+	var tbody = document.getElementById('table_body')
+	tbody.replaceChildren()
+	
+	//show headerrow again if in table mode
+	if ($("#interface").val() == "table"){
+		var headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
+		var widths = [-1,-1,-1,-1,150,100,-1]
+		for (var i = 0 ; i < headers.length; i++) {
+			//output = output + "<th>" + headers[i] + "</th>"
+			var p = document.getElementById('headerrow');
+			var newElement = document.createElement('th');
+			newElement.setAttribute('id', "");
+			if (widths[i] != -1){
+				newElement.setAttribute('style', "width:" + widths[i] + "px")
+			}
+			newElement.innerHTML = headers[i];
+			p.appendChild(newElement);
+			//addElement('header_row', 'th', "", headers[i])
+		}
+	}
+}
 

@@ -42,6 +42,12 @@ const USE_INCREMENTAL_RESULTS = true;
 class RemoteShExValidator {
   constructor (loaded, schemaURL, inputData, renderer, onCancel, endpoint, workerUrl) {
     this.renderer = renderer;
+	
+	//if in table mode, initialize the table headers and delete any bits of table already existing
+	tableReset()
+	
+	
+	
     this.onCancel = onCancel;
     this.workerUrl = workerUrl;
     this.created = new Canceleable(

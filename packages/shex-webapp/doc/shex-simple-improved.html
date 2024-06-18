@@ -211,7 +211,7 @@ ul {
     <!-- <script src="./jquery.min.js"></script> --> <!--not loading this because it gives an error anyways and it doesn;t seem to affect anything-->
     <script>
       // Load worker early.
-      var ShExWorker = new Worker("shex-simple-worker.js");
+      var ShExWorker = new Worker("ShExWorkerThread.js");
     </script>
     <script src="https://www.w3.org/scripts/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://swisnl.github.io/jQuery-contextMenu/dist/jquery.contextMenu.js" type="text/javascript"></script>
@@ -482,6 +482,6 @@ ul {
 	<!-- for table mode -->
 	<script src="./DataTransform2.js"></script>
 	<script src="./TableModeUtils.js"></script>
-    <script>new ShExApp(DefaultBase).start();</script>
+    <script>new ShExInWorkerApp(DefaultBase).start();</script>
   </body>
 </html>
