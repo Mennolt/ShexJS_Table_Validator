@@ -1376,7 +1376,6 @@ class DirectShExValidator {
     this.renderer = renderer;
 	//if in table mode, initialize the table headers and delete any bits of table already existing
 	tableReset()
-	}
   }
   async invoke (fixedMap, validationTracker, time, _done, _currentAction) {
     const ret = this.validator.validateShapeMap(fixedMap, validationTracker);
