@@ -3,8 +3,6 @@ async function renderOutput(data) {
 		console.log("data missing at time of table render")
 	}
 	
-	var output = "<table><thead><tr>"
-	
 	//create headers for output table
 	//NOTE: THIS MOVED OUTSIDE FUNCTION TO ACCOMODATE RENDERING METHOD
 	// headers = ["Item", "Shape", "Property", "Value", "Error Type", "Triple Link", "Further Error Info"]
@@ -12,7 +10,6 @@ async function renderOutput(data) {
 		// output = output + "<th>" + headers[i] + "</th>"
 		// addElement('header_row', 'th', "", headers[i])
 	// }
-	output = output + "</tr></thead>"
 
 	//construct query prefix string  & endpoint via input fields
 	//for final release: change default to wikidata
@@ -57,7 +54,7 @@ PREFIX psv: <` + wikibase_pre + `/prop/statement/value/>
 
 	
 	for (var i = 0; i < data.length; i++){
-		var arry = createArray(data[i])
+		var dataArray = createArray(data[i])
 		
 		
 		// get data required for pretty display
@@ -81,7 +78,7 @@ WHERE
   #BIND(STR(?simplevalueLink) as ?xxx)
   FILTER(STRSTARTS(STR(?simplevalueLink),  STR(ps:)))
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # Helps get the label in your language, if not, then en language
-  #only get English language item names
+  #only get English language item names (this prevents duplicate rows in the query output, and helps getting the correct row for eventual output, rather than the first language available)
   FILTER(LANGMATCHES(LANG(?item), "en"))
 }` //` + item_ID_link[item_ID_link.length - 1] + `
 		
@@ -94,12 +91,13 @@ WHERE
 					},
 					mode:'cors'
 			}).then(response => response.json()).then(querydata => {
-				var markedUpArry = addMarkupData(arry, querydata, data[i].node)
+				var markedUpArry = addMarkupData(dataArray, querydata, data[i].node)
 				
-				output = output + displayTable(markedUpArry)
+				displayTable(markedUpArry)
 				
 			})
 
+		//test options to show JSON form of input & array
 	 	// addElement('results', 'div', 'test', '[Item, Property, value, shape, issue type]') ;
 		// addElement('results', 'div', 'test', JSON.stringify(arry)) ;
 		// addElement('results', 'div', 'test', '<br>')
@@ -109,8 +107,7 @@ WHERE
 	
 	
 	}
-	output = output + "</table>"
-	return output
+	return 
 }
 
 function createArray(x) {
@@ -321,8 +318,8 @@ function createArrayRow(item) {
 	} else if (item.type == "ExcessTripleViolation") {
 		output.error_type = item.type
 		output.error_fulltext = item
-		output.property = item.triple.predicate.value
-		output.value = item.triple.object.value
+		output.property = item.triple.predicate.value //value is wrong name for wikidata? Maybe should be id instead?
+		output.value = item.triple.object.value //value is wrong name for wikidata? Maybe should be id instead?
 	} else if (item.type == "TypeMismatch") {
 		output.error_type = item.type
 		output.error_fulltext = item
@@ -587,7 +584,7 @@ function addMarkupData(dataArray, markupArray, node) {
 		dataArray[i].triple_link = undefined //fail gracefully if no triple link involved
 		for (j=0; j<working_pj_list.length;j++){
 			for (k=0; k<working_vj_list.length;k++){
-				if (j==k){
+				if (j==k){ //this is definitely wrong
 					console.log('found')
 					dataArray[i].triple_link = {text : "Link", rowcount : 1, link : markupArray.results.bindings[j].statementLink.value}
 				}
