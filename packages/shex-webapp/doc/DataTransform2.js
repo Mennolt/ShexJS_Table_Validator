@@ -120,8 +120,7 @@ function createArray(x) {
 	if (x.status === 'conformant') {
 		//if here: add 1 row containing item name, then conformant in all other cells
 		const row_vals = [{item : {text : [x.node], rowcount : 1}, shape : x.shape.term, 
-		property : null, value : null,
-		error_type : 'conforms'}]
+		error_type : 'Passed all checks'}]
 		
 		return row_vals
 	}
@@ -309,35 +308,35 @@ function createArrayRow(item) {
 	
 	var output = {}
 	if (item.type == "MissingProperty") {
-		output.property =  item.property;
+		output.property =  "Missing Property"//item.property;
 		output.error_type = item.type
 	} else if (item.type == "NodeConstraintViolation"){
-		output.error_type = item.type
+		output.error_type = "Complex Error"//item.type
 		output.value = item.node.value
 		output.error_fulltext = item.errors[0]
 	} else if (item.type == "ExcessTripleViolation") {
-		output.error_type = item.type
+		output.error_type = "Too many values"//item.type
 		output.error_fulltext = item
-		output.property = item.triple.predicate.value //value is wrong name for wikidata? Maybe should be id instead?
-		output.value = item.triple.object.value //value is wrong name for wikidata? Maybe should be id instead?
+		output.property = item.triple.predicate.id //value is wrong name for wikidata? Maybe should be id instead?
+		output.value = item.triple.object.id //value is wrong name for wikidata? Maybe should be id instead?
 	} else if (item.type == "TypeMismatch") {
 		output.error_type = item.type
-		output.error_fulltext = item
+		output.error_fulltext = item + "<= This was not supposed to happen. Contact the developer and help them improve this tool by telling you what you did!"
 		console.log(item)
 		console.log('type mismatch detected! Implement to continue')
 	} else if (item.type == 'SemActFailure') {
 		output.error_type = item.type
-		output.error_fulltext = item
+		output.error_fulltext = item + "<= This was not supposed to happen. Contact the developer and help them improve this tool by telling you what you did!"
 		console.log(item)
 		console.log('Semaphote Act Failure detected! Implement to continue')
 	} else if (item.type == 'ClosedShapeViolation') {
 		output.error_type = item.type
-		output.error_fulltext = item
+		output.error_fulltext = item + "<= This was not supposed to happen. Contact the developer and help them improve this tool by telling you what you did!"
 		console.log(item)
 		console.log('Closed Shape Violation detected! Implement to continue')
 	}else {
 		output.error_type = item.type
-		output.error_fulltext = item
+		output.error_fulltext = item + "<= This was not supposed to happen. Contact the developer and help them improve this tool by telling you what you did!"
 	}
 	//console.log(item)
 	//console.log(output)
@@ -395,7 +394,7 @@ function addRow(rowJSON, row_ID) {
 	
 	//get conformance information
 	var conforms = null
-	if (rowJSON.error_type == "conforms"){
+	if (rowJSON.error_type == "Passed all checks"){
 		conforms = "#e4ffe4"
 	}
 	
