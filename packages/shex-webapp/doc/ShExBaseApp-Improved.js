@@ -1521,7 +1521,7 @@ class ShExResultsRenderer {
         }, {});
 	  case "table"://new method added in this version
 		//print the table rows associated with this entry
-		if(fails || $("#show-conformant").val()=="on"){
+		if(fails || document.getElementById("show-conformant").checked==false){
 			renderOutput([entry])//.then(output => console.log(output))
 		}
 		break;
