@@ -270,7 +270,7 @@ function goThroughJSON(data) {
 		//if the item is still wrapped in an array (happens in some cases with data from wikidata) go through al items in that array
 		if (data instanceof Array) {
 			for (var i=0;i<data.length;i++){
-				output.concat(goThroughJSON(data[i]))
+				output = output.concat(goThroughJSON(data[i]))
 			}
 		} else {
 		output = createArrayRow(data)
