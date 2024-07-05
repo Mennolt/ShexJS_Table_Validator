@@ -297,6 +297,8 @@ function goThroughJSON(data) {
 				}
 			}
 		}
+		//TODO: Also add possible value and property information available if not yet there
+		//for nodeconstraints this is for example data.triple.object and data.triple.predicate
 	}
 	return output
 }
@@ -308,8 +310,8 @@ function createArrayRow(item) {
 	
 	var output = {}
 	if (item.type == "MissingProperty") {
-		output.property =  "Missing Property"//item.property;
-		output.error_type = item.type
+		output.property =  item.property;
+		output.error_type = "Missing Property"//item.type
 	} else if (item.type == "NodeConstraintViolation"){
 		output.error_type = "Complex Error"//item.type
 		output.value = item.node.value
