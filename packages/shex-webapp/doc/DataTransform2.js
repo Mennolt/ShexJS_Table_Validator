@@ -397,7 +397,7 @@ function addRow(rowJSON, row_ID) {
 	//get conformance information
 	var conforms = null
 	if (rowJSON.error_type == "Passed all checks"){
-		conforms = "#e4ffe4"
+		conforms = "#6fff6f"
 	}
 	
 	//add all child cells in order
