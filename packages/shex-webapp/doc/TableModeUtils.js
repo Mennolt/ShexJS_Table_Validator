@@ -149,3 +149,13 @@ function tableReset(){
 	}
 }
 
+
+
+function showHideWBCloudParam() {
+	//toggles all divs that are required only for wikibase cloud integration. 
+	//for new divs which have this, give them data-target="WBCloudParam"
+	var target = document.querySelectorAll('[data-target="WBCloudParam"]');
+	for (var i=0;i<target.length;i++){
+		target[i].style.display = document.getElementById("show-wb-cloud").checked ? 'block' : 'none';
+	}
+}

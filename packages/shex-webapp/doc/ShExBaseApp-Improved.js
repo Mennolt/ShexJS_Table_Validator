@@ -1675,6 +1675,7 @@ class ShExBaseApp {
 	//for table mode
 	$('#export-table').on("click", exportTable);
 	 $("#validate").on("click", revealTable);
+	 $("#show-wb-cloud").on("change", showHideWBCloudParam);
 
     $("#loadForm").dialog({
       autoOpen: false,

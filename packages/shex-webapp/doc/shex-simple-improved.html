@@ -347,17 +347,23 @@ ul {
           </div>
         </div>
 		<div id="table-parameters">
-	      Query Endpoint (if not Wikidata): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
-	      </br>
-	      Wikibase prefix (if not Wikidata): <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud" style="width:250px"></textarea>
-	      </br>
-		  Hide conformant items: <input type="checkbox" id="show-conformant">
+			Enable linking to Wikibase Cloud: <input type="checkbox" id="show-wb-cloud">
+			</br>
+			<div id="wb-cloud-parameters"  data-target="WBCloudParam" style="display:none;">
+			  Query Endpoint (if not Wikidata): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
+			  </br>
+			  Wikibase prefix (if not Wikidata): <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud" style="width:250px"></textarea>
+			  </br>
+			</div>
+		    Hide conformant items: <input type="checkbox" id="show-conformant">
 	    </div>
 		<button id="validate" >validate (ctl-enter)</button>
       </div>
       <div id="inputData" class="panel">
         <h2 class="status"> </h2>
-        <textarea rows="25" class="data droparea" style="width: 100%" spellcheck="false"></textarea>
+		<div data-target="WBCloudParam" id="inputDataField" style="display:none;">
+			<textarea rows="5" class="data droparea" style="width: 100%" spellcheck="false"></textarea>
+		</div>
         <div style="margin-left: .1em;">
           <div class="passes" style="float:left; display:none;">
             <p></p>
