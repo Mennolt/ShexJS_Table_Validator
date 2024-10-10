@@ -4,15 +4,16 @@
 
 const Path = require('path');
 const Fs = require('fs');
-const ShExUtil = require("@shexjs/util");
+const ShExCore = require("@shexjs/core");
+const ShExUtil = ShExCore.Util;
+const ShExLoader = require("@shexjs/loader"); // for verbose output
 const ShExRWriter = require('../../../lib/ShExRWriter');
 const Jsonld = require("jsonld");
 const N3 = require("n3");
-const ShExNode = require("@shexjs/node")({rdfjs: N3, jsonld: Jsonld});
 
 
 // Generate command line interface
-const CommandLineOptions = [
+var CommandLineOptions = [
     { name: "help",  alias: "h", type: Boolean },
     { name: "shex",  alias: "x", type: String, multiple:  true, defaultValue:   [], defaultOption:  true },
     { name: "json",  alias: "j", type: String, multiple:    true, defaultValue:   [] },
@@ -21,7 +22,7 @@ const CommandLineOptions = [
     { name: "schema-base",       type: String, multiple:    false, defaultValue: undefined },
     { name: "abbreviate", alias: "a", type: Boolean, multiple:  false, defaultValue:   false }
 ];
-const CLI = require("command-line-args")(CommandLineOptions);
+var CLI = require("command-line-args")(CommandLineOptions);
 function abort (msg) {
   console.error(msg);
   console.error(require('command-line-usage')([
@@ -40,7 +41,7 @@ function abort (msg) {
 }
 
 // Extract user commands
-const cmds = CLI;
+var cmds = CLI;
 if (cmds.help)
     abort("");
 if (cmds.shex.length === 0 && cmds.json.length === 0) abort("no shex specified");
@@ -53,9 +54,9 @@ if (cmds['schema-keep-imports']) {
   schemaOptions.keepImports = cmds['schema-keep-imports']
 }
 
-ShExNode.load({shexc: cmds.shex, json: cmds.json}, null, schemaOptions).then(function (loaded) {
+ShExLoader.load(cmds.shex, cmds.json, [], [], schemaOptions).then(function (loaded) {
   if (false) {
-    let w;
+    var w;
     new ShExRWriter({ base: cmds['schema-base'] || loaded.schemaMeta[0].base }).
       writeSchema(loaded.schema, function (error, text, prefixes) {
         if (error) throw error;

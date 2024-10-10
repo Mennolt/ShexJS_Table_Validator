@@ -1,8 +1,8 @@
 {
   "name": "furk",
   "private": true,
-  "version": "1.0.0-alpha.24",
-  "description": "Shape Expressions library compatible with N3 and SPARQL.js - monorepo root",
+  "version": "1.0.0-alpha.3",
+  "description": "Shape Expressions library compatible with N3 and SPARQL.js.",
   "author": {
     "name": "Eric Prud'hommeaux",
     "email": "eric@w3.org",
@@ -27,11 +27,7 @@
   "engines": {
     "node": ">=0.10.0"
   },
-  "dependencies": {
-    "@shexjs/term": "^1.0.0-alpha.25",
-    "clipboard": "^2.0.11",
-    "shex": "^1.0.0-alpha.26"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@shexjs/cli": "file:packages/shex-cli",
     "@shexjs/core": "file:packages/shex-core",
@@ -61,34 +57,26 @@
     "sync-request": "^6.0.0",
     "terser-webpack-plugin": "^1.2.4",
     "timeout-promise-queue": "^0.9.2",
-    "webpack": "^5.89.0",
-    "webpack-bundle-analyzer": "^4.10.1",
-    "webpack-cli": "^5.1.4"
+    "uglify-es": "^3.3.9",
+    "webpack": "^4.31.0",
+    "webpack-cli": "^3.3.2"
   },
   "scripts": {
-    "makemake": "node tools/makeMake.js > Makefile",
-    "clean-all": "find . -maxdepth 3 -name node_modules -exec rm -r {} \\; ; find . -maxdepth 3 -name package-lock.json -exec rm -r {} \\; || true",
-    "patch": "patch -p1 -r - < modules.patch",
-    "compile": "make ALL",
-    "rebuild": "npm run clean-all && npx lerna bootstrap && for d in packages/*; do (cd $d && npm install); done && npm ci",
-    "reinstall-deps": "npm rebuild && npm run webpack && npm run test-all && git add -u",
+    "clean-all": "find . -name node_modules -exec rm -r {} \\; ; find . -name package-lock.json -exec rm -r {} \\; || true",
+    "rebuild": "npm run clean-all ; npm install && npx lerna bootstrap",
     "show-links": "find . -path \\*node_modules\\* -type l -prune -exec ls -l {} \\;",
     "make": "(cd test/ && make test)",
-    "test": "mocha packages/*/test/*test.js -C -R dot",
-    "test-all": "TEST_cli=true TEST_browser=true TEST_server=true mocha packages/*/test/*test.js -R dot",
-    "test-verbose": "mocha packages/*/test/*test.js && TEST_cli=true mocha packages/*/test/*test.js test/cli-test.js && TEST_browser=true mocha packages/*/test/*test.js test/browser-test.js",
-    "earl999": "mocha packages/*/test/*test.js -C -R mocha-earl-reporter test/Parser-Writer-test.js test/Validation-test.js",
+    "test": "mocha -C -R dot",
+    "test-all": "mocha && TEST_cli=true mocha test/cli-test.js",
+    "earl999": "mocha -C -R mocha-earl-reporter test/Parser-Writer-test.js test/Validation-test.js",
     "earl": "cd test && make Parser-Writer-test && make Validation-test",
-    "lint": "eslint packages/shex-cli/test/findPath.js",
-    "travisRepo": "./tools/travisRepo.sh",
-    "browserify-all": "./tools/browserify-all.js #; npm run n3-browserify",
+    "lint": "eslint test/findPath.js",
+    "travisRepo": "./test/travisRepo.sh",
+    "browser-webpack": "npx webpack --config webpack.config.js --mode production ; npm run n3-browserify",
+    "n3-browserify": "mkdir -p packages/shex-webapp/node_modules/n3/browser ; npx browserify -s N3 -o packages/shex-webapp/node_modules/n3/browser/n3-browserify.js node_modules/n3/N3.js ; npx uglifyjs packages/shex-webapp/node_modules/n3/browser/n3-browserify.js -o packages/shex-webapp/node_modules/n3/browser/n3-browserify.min.js -c",
+    "browserify-all": "./browserify-all.js ; npm run n3-browserify",
     "coverage": "nyc npm run test-all",
-    "coveralls": "cat ./coverage/lcov.info | coveralls",
-    "parser-all": "(cd packages/shex-parser/ && npm run parser) && (cd packages/shape-map/ && npm run parser)",
-    "travis-deploy-once": "travis-deploy-once",
-    "webpack": "(cd packages/shex-webapp/ && npm run webpack) && (cd packages/extension-map/ && npm run webpack)",
-    "webpack-analyzer": "cd packages/shex-webapp && npm run webpack-analyzer",
-    "webpack-monitor": "if [ -d ./node_modules/webpack-monitor ]; then (cd packages/shex-webapp && npm run webpack-monitor) else echo \"You need to install webpack-monitor\"; fi"
+    "travis-deploy-once": "travis-deploy-once"
   },
   "publishConfig": {
     "access": "private"
@@ -148,18 +136,5 @@
       "should": true,
       "describe": true
     }
-  },
-  "nyc": {
-    "exclude": [
-      "**/*Jison.*",
-      "test/"
-    ],
-    "extension": [
-      ".js"
-    ],
-    "reporter": [
-      "lcov",
-      "text"
-    ]
   }
 }

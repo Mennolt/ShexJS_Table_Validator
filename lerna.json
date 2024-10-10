@@ -1,22 +1,7 @@
 {
-  "version": "1.0.0-alpha.26",
-  "npmClient": "npm",
-  "hoist": true,
-  "command": {
-    "publish": {
-      "ignoreChanges": [
-        "ignored-file",
-        "*.md"
-      ],
-      "message": "chore(release): publish",
-      "registry": "https://registry.npmjs.org"
-    },
-    "bootstrap": {
-      "ignore": "component-*",
-      "npmClientArgs": []
-    }
-  },
   "packages": [
+    "extensions/*",
     "packages/*"
-  ]
+  ],
+  "version": "1.0.0-alpha.3"
 }

@@ -2,9 +2,10 @@
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta charset="utf-8" />
-    <title>ShEx2 — Simple Online Validator</title>
-    <meta name="description" content="simple ShEx2 demo" />
-    <script src="webpacks/jquery-components.min.js"></script>
+    <title>ShEx2 — Tabular Online Validator</title>
+    <meta name="description" content="ShEx2 Validator for Wikidata" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+	<link rel="stylesheet" href="./style.css">
     <style>
       h1 { font-size: 1.3em; }
       h1, p, ul { margin: 0; margin-left: .1em; }
@@ -39,8 +40,6 @@
         border-width: 2px;
         padding: 1px 0px;
       }
-      ul[data-navColumn] button:focus::before { content: "> "; color: #730; margin-left: -1em; }
-      ul[data-navColumn] button:focus::after  { content: " <"; color: #730; margin-right: -1em; }
       .schema.textarea, .schema, .schema.ui-dialog-content { background-color: #f4f4ff; color: #000000; border-color: #fc561c }
       #inputSchema li.selected button { background-color: #e8e8ff; color: #000000; }
       #meta textarea, .meta { background-color: #fffff4; color: #000000; }
@@ -48,8 +47,6 @@
       #inputData textarea, .data, .data.ui-dialog-content { background-color: #f4fff4; color: #000000; border-color: #f0a133 }
       #inputData li.selected button { background-color: #e8ffe8; color: #000000; }
       #manifestDrop { border-color: white; width: 100%; }
-      #manifestDrop div.manifest { overflow: auto; max-height: 10ex; }
-      #extensionDrop { border-color: #00ffff; width: 88%; border-width: thin; }
       #manifestDrop div.manifest { overflow: auto; max-height: 12ex; }
       #inputSchema li button, #inputData li button {
         font-size: .7em;
@@ -75,7 +72,6 @@
       #results div.human pre { margin: 0 2em; }
       #results h3 { font-size: larger; margin: 0; }
       #results pre { margin: 1ex; }
-      #results .data, #results .schema { border-style: dotted; border-width: 2px; }
       .status { display: none; } /* disable .status 'cause it's redundant against the selected marker. */
       #navlist li {
         display: inline;
@@ -229,38 +225,34 @@ ul {
     </svg>
 
     <div id="title">
-      <img src="ShEx-bones-min.svg" class="ShExLogo" alt="ShEx Icon"/><h1 style="float:left;">ShEx2 — Simple Online Validator</h1>
+      <img src="//www.w3.org/2015/ShEx-bones-min.svg" class="ShExLogo" alt="ShEx Icon"/><h1 style="float:left;">ShEx2 — Tabular Online Validator</h1>
       <!-- <ul id="navlist" style="float:left; padding-left: 1em;"> -->
-      <!--   <li>‣ <span class="heading">drag and drop to:</span> <input type="file" id="schema-upload" class="inputfile" data-target="#inputSchema textarea"/> <label for="schema-upload" class="schema">ShEx schema</label>, <input type="file" id="data-upload" class="inputfile" data-target="#inputData textarea"/> <label for="data-upload" class="data">RDF data</label></li> -->
+      <!--   <li>‣ <span class="heading">drag and drop to:</span> <input type="file" id="schema-upload" class="inputfile" data-target="#inputSchema textarea"/> <label for="schema-upload" class="schema">ShEx schema</label>, <input type="file" id="meta-upload" class="inputfile" data-target="#meta textarea"/> <label for="meta-upload" class="meta">metadata</label>, <input type="file" id="data-upload" class="inputfile" data-target="#inputData textarea"/> <label for="data-upload" class="data">RDF data</label></li> -->
       <!-- </ul> -->
       <form id="menuForm">
           <button id="menu-button" title="click for menu">
             controls <svg><use xlink:href="#down-arrow"/><use xlink:href="#up-arrow" /></svg>
           </button>
-        <div id="controls" style="z-index: 127;">
+        <div id="controls">
           <div>
             <ul>
               <li class="        "><h3>user interface</h3></li>
-              <li class="menuitem"><label for="interface">style:</label><select id="interface"><option value="minimal">minimal</option><option value="human">human</option><option value="appinfo">appinfo</option></select></li>
+              <li class="menuitem"><label for="interface">style:</label><select id="interface" onchange="tableSelectCheck(this)"><option value="minimal">minimal</option><option value="human">human</option><option value="appinfo">	appinfo</option><option value="table" selected="selected">table</option></select></li>
               <li class="menuitem"><input type="checkbox" id="showMeta"/><label for="showMeta">show metadata pane</label></li>
               <li class="menuitem"><a id="download-results-button">download <span class="results">results</span></a></li>
               <li class="        "><hr/></li>
               <li class="        "><h3>HTTP</h3></li>
               <li class="menuitem" id="load-schema-button">load <span class="schema">schema</span></li>
-              <li class="menuitem" id="load-data-button">load <span class="data">data</span><span id="slurpSpan" style="float:right" title="fill data pane with data queried from &lt;https://query.wikidata.org/sparql&gt;"><input id="slurp" type="checkbox"><label for="slurp">slurp</label></span></li>
+              <li class="menuitem" id="load-data-button">load <span class="data">data</span></li>
               <li class="menuitem" id="load-manifest-button">load <span class="manifest">manifest</span></li>
-              <li id="extensionDrop" class="droparea"><h3>Extensions</h3></li>
-              <li class="menuitem" id="load-extension-button">load <span class="extension">extension</span></li>
               <li class="        "><hr/></li>
               <li class="        "><h3>drag and drop</h3></li>
               <li class="menuitem"><input type="checkbox" id="append"/><label for="append">drop appends</label></li>
               <li class="menuitem"><label for="duplicateShape">duplicate shape:</label><select id="duplicateShape"><option value="abort">abort</option><option value="replace">replace</option><option value="ignore">ignore</option></select></li>
               <li class="        "><hr/></li>
-              <li class="        "><h3>validation</h3></li>
-              <li class="menuitem"><label for="regexpEngine">error reporting:</label><select id="regexpEngine"><option value="eval-threaded-nerr">thorough</option><option value="eval-simple-1err">fast</option></select></li>
+              <li class="        "><h3>performance</h3></li>
+              <li class="menuitem"><label for="regexpEngine">error reporting:</label><select id="regexpEngine"><option value="threaded-val-nerr">thorough</option><option value="nfax-val-1err">fast</option></select></li>
               <li class="        "><hr/></li>
-              <li class="menuitem"><input type="checkbox" id="skipCycleCheck" checked/><label for="skipCycleCheck">skip cycle check</label></li>
-              <li class="menuitem"><input type="checkbox" id="ignoreClosed"/><label for="ignoreClosed">ignore closed-ness of shapes</label></li>
               <li class="menuitem" id="permalink"><a>Permalink</a></li>
               <li class="menuitem" id="about-button">About</li>
             </ul>
@@ -268,7 +260,7 @@ ul {
         </div>
       </form>
       <div id="loadForm" style="cursor: default; text-align: left; ">
-        <h1>Load <span class="whatToLoad"></span></h1>
+        <h1>Load <span></span></h1>
         <p class="menuitem"><label for="loadInput" style="float: left;">from </label><input id="loadInput" style="width: 80%;"/></p>
         <p class="validateTips">Enter a URL.</p>
       </div>
@@ -283,9 +275,9 @@ ul {
         <ul>
           <li>Sources:
           <ul>
-            <li><a href="https://github.com/shexSpec/shex.js/blob/main/doc/shex-simple.js">js</a>, <a href="https://github.com/shexSpec/shex.js/blob/main/doc/shex-simple.html">html</a> </li>
+            <li><a href="https://github.com/shexSpec/shex.js/blob/master/doc/shex-simple.js">js</a>, <a href="https://github.com/shexSpec/shex.js/blob/master/doc/shex-simple.html">html</a> </li>
             <li><a href="https://github.com/shexSpec/shex.js">project</a></li>
-            <li><a href="https://rawgit.com/shexSpec/shex.js/main/doc/shex-simple.html">rawgit</a></li>
+            <li><a href="https://rawgit.com/shexSpec/shex.js/master/doc/shex-simple.html">rawgit</a></li>
           </ul>
           </li>
           <li>ShEx:
@@ -297,7 +289,7 @@ ul {
               <li><a href="https://github.com/shexSpec/shex/issues?utf8=%E2%9C%93&amp;q=is%3Aissue%20is%3Aopen%20milestone%3A2.1">2.x features</a></li>
             </ul>
             </li>
-            <li><a href="https://rawgit.com/shexSpec/shex.js/main/doc/shex-simple.html">rawgit</a></li>
+            <li><a href="https://rawgit.com/shexSpec/shex.js/master/doc/shex-simple.html">rawgit</a></li>
           </ul>
           </li>
         </ul>
@@ -308,7 +300,7 @@ ul {
     <div id="inputarea">
       <div id="inputSchema" class="panel">
         <h2 class="status"> </h2>
-        <textarea rows="25" class="schema droparea" style="width: 100%" spellcheck="false"></textarea>
+        <textarea rows="25" class="schema droparea" style="width: 100%" spellcheck="false" placeholder="Schema text"></textarea>
         <div>
           <div id="manifestDrop" class="droparea">
             <div class="manifest">
@@ -349,6 +341,17 @@ ul {
           <div style="clear:both;">
           </div>
         </div>
+		<div id="table-parameters">
+			Enable linking to Wikibase Cloud: <input type="checkbox" id="show-wb-cloud">
+			</br>
+			<div id="wb-cloud-parameters"  data-target="WBCloudParam" style="display:none;">
+			  Query Endpoint (if not Wikidata): <input rows="1" spellcheck="false" id="query_endpoint" placeholder="https://validatortest.wikibase.cloud/query/sparql" style="width:300px"></textarea>
+			  </br>
+			  Wikibase prefix (if not Wikidata): <input rows="1" spellcheck="false" id="wikibase_prefix" placeholder="https://validatortest.wikibase.cloud" style="width:250px"></textarea>
+			  </br>
+			</div>
+		    Hide conformant items: <input type="checkbox" id="show-conformant">
+	    </div>
       </div>
       <div class="panel">
         <div id="meta" data-adjust="#inputData textarea" style="display: none;">
@@ -357,7 +360,9 @@ ul {
         </div>
         <div id="inputData">
           <h2 class="status"> </h2>
-          <textarea rows="25" class="data droparea" style="width: 100%"></textarea>
+          <div data-target="WBCloudParam" id="inputDataField" style="display:none;">
+			<textarea rows="5" class="data droparea" style="width: 100%" spellcheck="false"></textarea>
+		</div>
           <div style="margin-left: .1em;">
             <div class="passes" style="float:left; display:none;">
               <p></p>
@@ -376,8 +381,41 @@ ul {
               <button id="validate"><span class="validate-label">validate</span> (ctl-enter)</button>
         </div>
       </div>
+	  <!--text instructing how to use the validator-->
+			
+			<h4>How to use the Tabular Online Validator:</h4>
+			<p style="max-width:100%;white-space:pre-line;" class="wrap">
+			The top left field (purple) should contain your schema. It might already be filled out, if not add it there. 
+			The top right field (green) should contain the SPARQL endpoint where you can get your data. For Wikidata this is "<i>Endpoint: https://query.wikidata.org/sparql</i>". For Wikibase Cloud instances it looks like "<i>Endpoint: https://your_instance_name.wikibase.cloud/query/sparql</i>"
+			In the white field to the left enter the SPARQL query. The items returned by the query will be validated to check if they conform to the schema. The query should be encased in these two strings: "<code>SPARQL'''</code>" and "<code>'''@START</code>".
+			If you are not using Wikidata, enter the SPARQL query endpoint, as well as the url to your general database in the fields below the query field. 
+			
+			Then press the validate button to have the items you are querying for validated against the schema entered. After some time the table of validation results appears below. 
+			
+			Each row in the table is a potential error in the data. However the error being recorded might not be the actual error but indicate an error in a different location, if an error makes little sense look at different rows for the same item. 
+			For example it might suggest a property has a missing value, and the existing value for the same property is of a type not allowed according to the schema, in two rows beneath each other.
+			In that case changing the existing value to be valid will likely also remove the error indicating the value is missing.
+			
+			If the results seem to make no sense at all, consider that schemas are, like the data, created by Wikidata contributors who are only human, and there may be an error in the schema. Consider bringing this up in the talk page for the schema, or in any other place where schema users come together.
+			
+			Main problem types are:</p>
+			<ul>
+			<li> Missing property: Too few triples with the specified property exist.</li>
+			<li> Complex Error: Often a triple has a value that isn't allowed for that property. Look in Further Error Info for details in chat way it isn't allowed.</li>
+			<li> Too many values: There are more triples using a specific property than allowed by the shape.</li></ul>
     </div>
     <div id="results">
+	<!-- this table is a placeholder for results in table mode -->
+		<table class="results" id="table-mode-results" style="display:none">
+			<thead id="table_head">
+				<tr class="headerrow" id='headerrow'>
+				</tr>
+			</thead>
+			<tbody id='table_body'>
+			
+			</tbody>
+		</table>
+		<button id="export-table" style="display:none">Copy table Wikidata code</button>
       <h2 class="status"> </h2>
       <div></div>
     </div>
@@ -388,8 +426,6 @@ ul {
         Error.captureStackTrace = function () { };
       }
     </script>
-    <script src="webpacks/n3js.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-csv/1.0.21/jquery.csv.js"></script>
 
     <!-- #if browserify -->
 <!-- -->
@@ -450,8 +486,14 @@ ShExWebApp = (function () {
  -->
 
     <!-- #endif -->
+	
+	<!-- for table mode -->
+	<script src="./DataTransform2.js"></script>
+	<script src="./TableModeUtils.js"></script>
+
 
     <script src="../doc/ShExRSchema.js"></script>
     <script src="./shex-simple.js"></script>
+
   </body>
 </html>
